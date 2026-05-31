@@ -16,13 +16,17 @@
         h1 { font-size: 20px; margin-top: 0; margin-bottom: 15px; text-align: center; }
         label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; }
         
+        .label-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px; }
+        .label-row label { margin-bottom: 0; }
+        .btn-limpar { background: none; border: none; color: #de350b; font-size: 13px; font-weight: 600; cursor: pointer; padding: 0; margin: 0; width: auto; flex: none; transition: 0.2s; }
+        .btn-limpar:hover { opacity: 0.7; }
+
         input[type="time"], input[type="text"], input[type="number"], textarea, select {
             width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border-color);
             border-radius: 5px; font-size: 16px; box-sizing: border-box; font-family: inherit;
         }
         textarea { resize: vertical; min-height: 80px; margin-bottom: 5px; }
 
-        /* BIBLIOTECA DE TAREFAS */
         .biblioteca-details {
             background-color: #f9fafc; border: 1px solid var(--border-color);
             padding: 12px; border-radius: 8px; margin-bottom: 15px; transition: all 0.3s;
@@ -39,7 +43,6 @@
         #select-categoria { margin-bottom: 0; padding: 8px; font-size: 14px; flex: 1; }
         .btn-nova-cat { background-color: #00875a; color: white; padding: 8px 12px; border: none; border-radius: 5px; font-size: 13px; font-weight: 600; cursor: pointer; flex: none; }
 
-        /* LISTA DE HISTÓRICO ULTRACOMPACTA */
         .historico-lista { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
         .tarefa-chip { 
             background-color: #e6efff; color: #0052cc; border: 1px solid #b3d4ff; 
@@ -48,14 +51,9 @@
             width: 100%; box-sizing: border-box;
         }
         .tarefa-chip:hover { background-color: #d1e2ff; }
-        .tarefa-chip span { 
-            flex: 1; text-align: left; font-weight: 500; 
-            font-size: 12px; 
-            line-height: 1.2;
-        }
+        .tarefa-chip span { flex: 1; text-align: left; font-weight: 500; font-size: 12px; line-height: 1.2; }
         .btn-del-chip { 
-            background: none; border: none; cursor: pointer; 
-            color: #0052cc; opacity: 0.5; transition: 0.2s; border-radius: 3px;
+            background: none; border: none; cursor: pointer; color: #0052cc; opacity: 0.5; transition: 0.2s; border-radius: 3px;
             flex: none; width: auto; padding: 2px 6px; font-size: 10px; 
         }
         .btn-del-chip:hover { opacity: 1; color: white; background-color: #de350b; }
@@ -109,6 +107,16 @@
         }
         @keyframes fade-in { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* NOVA SEÇÃO: TAREFAS CONCLUÍDAS DO DIA */
+        .concluidas-section { background-color: #eafbee; border: 1px solid #36b37e; padding: 12px; border-radius: 8px; margin-bottom: 20px; display: none; }
+        .concluidas-header { font-size: 14px; font-weight: 600; margin-bottom: 10px; color: #006644; display: flex; align-items: center; gap: 5px; }
+        .concluidas-lista { list-style: none; padding: 0; margin: 0 0 10px 0; }
+        .concluidas-lista li { font-size: 13px; margin-bottom: 6px; color: #00875a; display: flex; justify-content: space-between; border-bottom: 1px dashed #abf5d1; padding-bottom: 4px; }
+        .concluidas-lista li span.nome-ok { font-weight: 500; }
+        .concluidas-lista li span.tempo-ok { font-weight: bold; }
+        .concluidas-resumo { font-weight: bold; color: #006644; font-size: 15px; text-align: right; padding-top: 5px; border-top: 2px solid #abf5d1; margin-top: 5px; }
+        .btn-limpar-concluidas { background: none; border: none; color: #006644; font-size: 11px; cursor: pointer; text-decoration: underline; padding: 0; width: 100%; text-align: center; margin-top: 10px; opacity: 0.7; }
+
         .db-section { margin-top: 20px; padding-top: 15px; border-top: 2px dashed var(--border-color); }
         .db-title { font-size: 16px; margin-top: 0; margin-bottom: 5px; color: #42526e; }
         .db-subtitle { font-size: 12px; color: #6b778c; margin-bottom: 10px; margin-top: 0; }
@@ -123,10 +131,12 @@
     <label>Horário de Início:</label>
     <input type="time" id="hora-inicio">
 
-    <label>Tarefas a Fazer:</label>
-    <textarea id="txt-entrada" placeholder="Fale ou digite as tarefas, separando cada uma delas por uma vírgula..."></textarea>
+    <div class="label-row">
+        <label>Tarefas a Fazer:</label>
+        <button id="btn-limpar-texto" class="btn-limpar">🗑️ Apagar tudo</button>
+    </div>
+    <textarea id="txt-entrada" placeholder="Fale ou digite as tarefas. Ex: 'Lavar louça 5', 'Varrer sala'"></textarea>
 
-    <!-- BIBLIOTECA DE TAREFAS -->
     <details class="biblioteca-details">
         <summary class="biblioteca-summary">⚡ Biblioteca de Tarefas</summary>
         <div class="biblioteca-controls">
@@ -166,6 +176,13 @@
         <div id="resultado"></div>
     </div>
 
+    <div id="painel-concluidas" class="concluidas-section">
+        <div class="concluidas-header">🏆 Tarefas Realizadas Hoje</div>
+        <ul id="lista-concluidas" class="concluidas-lista"></ul>
+        <div id="resumo-concluidas" class="concluidas-resumo">Total: 0h 0m</div>
+        <button id="btn-limpar-concluidas" class="btn-limpar-concluidas">Limpar histórico do dia</button>
+    </div>
+
     <div class="db-section">
         <h3 class="db-title">⚙️ Adicionar Novo Tempo Fixo</h3>
         <p class="db-subtitle">O app aprende sozinho, mas se quiser adicionar um tempo específico, digite aqui.</p>
@@ -180,7 +197,6 @@
 <script>
 document.addEventListener("DOMContentLoaded", () => {
     
-    // --- FUNÇÕES DE MEMÓRIA BLINDADAS ---
     function lerMemoriaSegura(chave, padrao) {
         try { 
             let dado = localStorage.getItem(chave); 
@@ -192,10 +208,10 @@ document.addEventListener("DOMContentLoaded", () => {
         try { localStorage.setItem(chave, JSON.stringify(dados)); } catch(e) {}
     }
 
-    // LIGAÇÕES SEGURAS COM A TELA (DOM)
     const ui = {
         btnVoz: document.getElementById('btn-voz'),
         txtEntrada: document.getElementById('txt-entrada'),
+        btnLimparTexto: document.getElementById('btn-limpar-texto'),
         horaInicio: document.getElementById('hora-inicio'),
         selectCategoria: document.getElementById('select-categoria'),
         containerHistorico: document.getElementById('container-historico'),
@@ -214,14 +230,19 @@ document.addEventListener("DOMContentLoaded", () => {
         btnCalcular: document.getElementById('btn-calcular'),
         novaPalavra: document.getElementById('nova-palavra'),
         novoTempo: document.getElementById('novo-tempo'),
-        btnSalvarTempo: document.getElementById('btn-salvar-tempo')
+        btnSalvarTempo: document.getElementById('btn-salvar-tempo'),
+        
+        // Elementos das Tarefas Concluídas
+        painelConcluidas: document.getElementById('painel-concluidas'),
+        listaConcluidas: document.getElementById('lista-concluidas'),
+        resumoConcluidas: document.getElementById('resumo-concluidas'),
+        btnLimparConcluidas: document.getElementById('btn-limpar-concluidas')
     };
 
     function addEv(elemento, evento, funcao) {
         if (elemento) elemento.addEventListener(evento, funcao);
     }
 
-    // VARIÁVEIS GLOBAIS
     let tarefasNaMemoria = []; 
     let horarioDeInicio = "11:00";
     let timerInterval;
@@ -234,11 +255,59 @@ document.addEventListener("DOMContentLoaded", () => {
     let tarefasConcluidasHoje = false; 
     let jaTocouTrofeu = false;
 
-    // AJUSTA O RELÓGIO INICIAL
     if (ui.horaInicio) {
         const agoraInit = new Date();
         ui.horaInicio.value = String(agoraInit.getHours()).padStart(2, '0') + ':' + String(agoraInit.getMinutes()).padStart(2, '0');
     }
+
+    addEv(ui.btnLimparTexto, 'click', () => {
+        if (ui.txtEntrada) { ui.txtEntrada.value = ''; ui.txtEntrada.focus(); }
+    });
+
+    // --- NOVA INTELIGÊNCIA: TAREFAS CONCLUÍDAS DO DIA ---
+    let logDiario = lerMemoriaSegura('logDiarioConcluidas', { data: new Date().toLocaleDateString('pt-BR'), tarefas: [] });
+    
+    // Se o dia virou, limpa o histórico automaticamente!
+    if (logDiario.data !== new Date().toLocaleDateString('pt-BR')) {
+        logDiario = { data: new Date().toLocaleDateString('pt-BR'), tarefas: [] };
+        salvarMemoriaSegura('logDiarioConcluidas', logDiario);
+    }
+
+    function renderizarConcluidas() {
+        if (!ui.painelConcluidas || !ui.listaConcluidas || !ui.resumoConcluidas) return;
+        
+        if (logDiario.tarefas.length === 0) {
+            ui.painelConcluidas.style.display = 'none';
+            return;
+        }
+
+        ui.listaConcluidas.innerHTML = '';
+        let totalMinutosDia = 0;
+
+        logDiario.tarefas.forEach(t => {
+            totalMinutosDia += t.tempo;
+            const li = document.createElement('li');
+            li.innerHTML = `<span class="nome-ok">✅ ${t.nome}</span> <span class="tempo-ok">${t.tempo} min</span>`;
+            ui.listaConcluidas.appendChild(li);
+        });
+
+        const horas = Math.floor(totalMinutosDia / 60);
+        const minutos = totalMinutosDia % 60;
+        let textoTotal = horas > 0 ? `${horas}h ${minutos}m` : `${minutos}m`;
+        
+        ui.resumoConcluidas.textContent = `Total investido: ${textoTotal}`;
+        ui.painelConcluidas.style.display = 'block';
+    }
+
+    addEv(ui.btnLimparConcluidas, 'click', () => {
+        if(confirm("Deseja apagar o histórico de tarefas realizadas hoje?")) {
+            logDiario.tarefas = [];
+            salvarMemoriaSegura('logDiarioConcluidas', logDiario);
+            renderizarConcluidas();
+        }
+    });
+
+    renderizarConcluidas(); // Carrega ao abrir o site
 
     const bancoPadraoNumeros = {
         "imposto": 90, "contas": 20, "banho": 15, "barba": 10,
@@ -280,33 +349,30 @@ document.addEventListener("DOMContentLoaded", () => {
         salvarMemoriaSegura('historicoCategorizado', historicoCategorizado);
     }
 
-    // --- SINTETIZADOR DE ÁUDIO (TEMA DA VITÓRIA - AYRTON SENNA) ---
     function tocarSintetizadorVitoria() {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!AudioContext) return; 
         
         const ctx = new AudioContext();
-        
-        // Frequências exatas do Tema da Vitória
         const melodia = [
-            { f: 659.25, d: 0.4,  t: 0.0 },  // E5 (Tãããã)
-            { f: 523.25, d: 0.15, t: 0.45 }, // C5 (tã)
-            { f: 392.00, d: 0.15, t: 0.65 }, // G4 (tã)
-            { f: 523.25, d: 0.15, t: 0.85 }, // C5 (tã)
-            { f: 659.25, d: 0.15, t: 1.05 }, // E5 (tã)
-            { f: 783.99, d: 0.6,  t: 1.25 }, // G5 (Tãããããã)
-            { f: 698.46, d: 0.15, t: 1.95 }, // F5 (tã)
-            { f: 659.25, d: 0.15, t: 2.15 }, // E5 (tã)
-            { f: 587.33, d: 0.15, t: 2.35 }, // D5 (tã)
-            { f: 523.25, d: 0.15, t: 2.55 }, // C5 (tã)
-            { f: 587.33, d: 0.8,  t: 2.75 }  // D5 (Tããããããã)
+            { f: 659.25, d: 0.4,  t: 0.0 }, 
+            { f: 523.25, d: 0.15, t: 0.45 },
+            { f: 392.00, d: 0.15, t: 0.65 },
+            { f: 523.25, d: 0.15, t: 0.85 },
+            { f: 659.25, d: 0.15, t: 1.05 },
+            { f: 783.99, d: 0.6,  t: 1.25 },
+            { f: 698.46, d: 0.15, t: 1.95 },
+            { f: 659.25, d: 0.15, t: 2.15 },
+            { f: 587.33, d: 0.15, t: 2.35 },
+            { f: 523.25, d: 0.15, t: 2.55 },
+            { f: 587.33, d: 0.8,  t: 2.75 } 
         ];
 
         melodia.forEach(nota => {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
             
-            osc.type = 'square'; // Estilo trompete de videogame
+            osc.type = 'square'; 
             osc.frequency.value = nota.f;
             
             osc.connect(gain);
@@ -494,6 +560,13 @@ document.addEventListener("DOMContentLoaded", () => {
             let cleanTask = rawTask.trim();
             if (cleanTask.length < 3) return; 
 
+            let explicitTime = null;
+            const matchTempo = cleanTask.match(/(.+?)\s+(\d+)$/);
+            if (matchTempo) {
+                cleanTask = matchTempo[1].trim();
+                explicitTime = parseInt(matchTempo[2], 10);
+            }
+
             let taskDuration = 10; 
             let dbKeyExata = cleanTask; 
             let achouNoBanco = false;
@@ -507,10 +580,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             }
 
-            if (!achouNoBanco) { bancoDeTempos[dbKeyExata] = { historico: [10], media: 10 }; }
+            if (explicitTime !== null) {
+                taskDuration = explicitTime;
+                let chaveSalvar = achouNoBanco ? dbKeyExata : cleanTask;
+                if (!bancoDeTempos[chaveSalvar]) bancoDeTempos[chaveSalvar] = { historico: [], media: explicitTime };
+                
+                bancoDeTempos[chaveSalvar].historico.push(explicitTime);
+                if (bancoDeTempos[chaveSalvar].historico.length > 5) bancoDeTempos[chaveSalvar].historico.shift();
+                
+                let soma = 0; bancoDeTempos[chaveSalvar].historico.forEach(val => soma += val);
+                bancoDeTempos[chaveSalvar].media = Math.round(soma / bancoDeTempos[chaveSalvar].historico.length);
+            } 
+            else if (!achouNoBanco) { 
+                bancoDeTempos[dbKeyExata] = { historico: [10], media: 10 }; 
+            }
 
-            cleanTask = cleanTask.replace(/^(a |o |as |os )/i, '');
-            let nomeFinal = cleanTask.charAt(0).toUpperCase() + cleanTask.slice(1);
+            let textoExibicao = cleanTask.replace(/^(a |o |as |os )/i, '');
+            let nomeFinal = textoExibicao.charAt(0).toUpperCase() + textoExibicao.slice(1);
             
             let tarefaJaExisteNaBiblioteca = false;
             for (let cat in historicoCategorizado) {
@@ -646,6 +732,7 @@ document.addEventListener("DOMContentLoaded", () => {
             let tarefaAtual = tarefasNaMemoria[indexTarefaAtiva];
             let chaveDB = tarefaAtual.dbKey;
             
+            // 1. Atualiza a média no banco principal
             if (bancoDeTempos[chaveDB]) {
                 bancoDeTempos[chaveDB].historico.push(minutosReais);
                 if (bancoDeTempos[chaveDB].historico.length > 5) bancoDeTempos[chaveDB].historico.shift();
@@ -655,6 +742,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 bancoDeTempos[chaveDB].media = novaMedia;
                 salvarMemoriaSegura('meuBancoInteligente', bancoDeTempos);
             }
+
+            // 2. REGISTRA A TAREFA NO DIÁRIO DE VITÓRIAS
+            logDiario.tarefas.push({ nome: tarefaAtual.name, tempo: minutosReais });
+            salvarMemoriaSegura('logDiarioConcluidas', logDiario);
+            renderizarConcluidas();
 
             const agora = new Date();
             const hh = String(agora.getHours()).padStart(2, '0');
@@ -686,6 +778,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     </div>
                 `;
                 ui.resumoTopo.style.display = "none";
+                
+                if (ui.txtEntrada) { ui.txtEntrada.value = ''; }
                 
                 if (!jaTocouTrofeu) {
                     tocarSintetizadorVitoria();
@@ -765,7 +859,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ui.resultadoDiv.innerHTML = html;
     }
 
-}); // Fim da "Blindagem" DOMContentLoaded
+}); 
 </script>
 
 </body>
