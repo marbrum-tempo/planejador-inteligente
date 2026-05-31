@@ -43,20 +43,20 @@
         .historico-lista { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
         .tarefa-chip { 
             background-color: #e6efff; color: #0052cc; border: 1px solid #b3d4ff; 
-            border-radius: 5px; padding: 4px 8px; /* Altura drasticamente reduzida */
+            border-radius: 5px; padding: 4px 8px; 
             cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: space-between;
             width: 100%; box-sizing: border-box;
         }
         .tarefa-chip:hover { background-color: #d1e2ff; }
         .tarefa-chip span { 
             flex: 1; text-align: left; font-weight: 500; 
-            font-size: 12px; /* Letra ainda menor */
+            font-size: 12px; 
             line-height: 1.2;
         }
         .btn-del-chip { 
             background: none; border: none; cursor: pointer; 
             color: #0052cc; opacity: 0.5; transition: 0.2s; border-radius: 3px;
-            flex: none; width: auto; padding: 2px 6px; font-size: 10px; /* Ícone ✖ em miniatura */
+            flex: none; width: auto; padding: 2px 6px; font-size: 10px; 
         }
         .btn-del-chip:hover { opacity: 1; color: white; background-color: #de350b; }
 
@@ -126,6 +126,7 @@
     <label>Tarefas a Fazer:</label>
     <textarea id="txt-entrada" placeholder="Fale ou digite as tarefas, separando cada uma delas por uma vírgula..."></textarea>
 
+    <!-- BIBLIOTECA DE TAREFAS -->
     <details class="biblioteca-details">
         <summary class="biblioteca-summary">⚡ Biblioteca de Tarefas</summary>
         <div class="biblioteca-controls">
@@ -179,6 +180,7 @@
 <script>
 document.addEventListener("DOMContentLoaded", () => {
     
+    // --- FUNÇÕES DE MEMÓRIA BLINDADAS ---
     function lerMemoriaSegura(chave, padrao) {
         try { 
             let dado = localStorage.getItem(chave); 
@@ -190,6 +192,7 @@ document.addEventListener("DOMContentLoaded", () => {
         try { localStorage.setItem(chave, JSON.stringify(dados)); } catch(e) {}
     }
 
+    // LIGAÇÕES SEGURAS COM A TELA (DOM)
     const ui = {
         btnVoz: document.getElementById('btn-voz'),
         txtEntrada: document.getElementById('txt-entrada'),
@@ -218,6 +221,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (elemento) elemento.addEventListener(evento, funcao);
     }
 
+    // VARIÁVEIS GLOBAIS
     let tarefasNaMemoria = []; 
     let horarioDeInicio = "11:00";
     let timerInterval;
@@ -230,6 +234,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let tarefasConcluidasHoje = false; 
     let jaTocouTrofeu = false;
 
+    // AJUSTA O RELÓGIO INICIAL
     if (ui.horaInicio) {
         const agoraInit = new Date();
         ui.horaInicio.value = String(agoraInit.getHours()).padStart(2, '0') + ':' + String(agoraInit.getMinutes()).padStart(2, '0');
@@ -275,30 +280,41 @@ document.addEventListener("DOMContentLoaded", () => {
         salvarMemoriaSegura('historicoCategorizado', historicoCategorizado);
     }
 
+    // --- SINTETIZADOR DE ÁUDIO (TEMA DA VITÓRIA - AYRTON SENNA) ---
     function tocarSintetizadorVitoria() {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!AudioContext) return; 
         
         const ctx = new AudioContext();
+        
+        // Frequências exatas do Tema da Vitória
         const melodia = [
-            { f: 440.00, d: 0.3, t: 0.0 }, { f: 440.00, d: 0.3, t: 0.4 }, { f: 440.00, d: 0.3, t: 0.8 },
-            { f: 466.16, d: 0.4, t: 1.2 }, { f: 440.00, d: 0.2, t: 1.7 }, { f: 392.00, d: 0.4, t: 1.9 },
-            { f: 440.00, d: 0.3, t: 2.5 }, { f: 349.23, d: 0.8, t: 2.9 } 
+            { f: 659.25, d: 0.4,  t: 0.0 },  // E5 (Tãããã)
+            { f: 523.25, d: 0.15, t: 0.45 }, // C5 (tã)
+            { f: 392.00, d: 0.15, t: 0.65 }, // G4 (tã)
+            { f: 523.25, d: 0.15, t: 0.85 }, // C5 (tã)
+            { f: 659.25, d: 0.15, t: 1.05 }, // E5 (tã)
+            { f: 783.99, d: 0.6,  t: 1.25 }, // G5 (Tãããããã)
+            { f: 698.46, d: 0.15, t: 1.95 }, // F5 (tã)
+            { f: 659.25, d: 0.15, t: 2.15 }, // E5 (tã)
+            { f: 587.33, d: 0.15, t: 2.35 }, // D5 (tã)
+            { f: 523.25, d: 0.15, t: 2.55 }, // C5 (tã)
+            { f: 587.33, d: 0.8,  t: 2.75 }  // D5 (Tããããããã)
         ];
 
         melodia.forEach(nota => {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
             
-            osc.type = 'triangle'; 
+            osc.type = 'square'; // Estilo trompete de videogame
             osc.frequency.value = nota.f;
             
             osc.connect(gain);
             gain.connect(ctx.destination);
             
             gain.gain.setValueAtTime(0, ctx.currentTime + nota.t);
-            gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + nota.t + 0.05);
-            gain.gain.setValueAtTime(0.2, ctx.currentTime + nota.t + nota.d - 0.05);
+            gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + nota.t + 0.05);
+            gain.gain.setValueAtTime(0.15, ctx.currentTime + nota.t + nota.d - 0.05);
             gain.gain.linearRampToValueAtTime(0, ctx.currentTime + nota.t + nota.d);
             
             osc.start(ctx.currentTime + nota.t);
