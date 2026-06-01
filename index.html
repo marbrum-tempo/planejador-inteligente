@@ -272,7 +272,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // AUTO-SAVE DA CAIXA DE TEXTO
     addEv(ui.txtEntrada, 'input', () => {
         salvarMemoriaSegura('backupTextoEntrada', ui.txtEntrada.value);
     });
@@ -292,7 +291,6 @@ document.addEventListener("DOMContentLoaded", () => {
         horarioDeInicio = backupLista.horaIni;
         if(ui.horaInicio) ui.horaInicio.value = horarioDeInicio;
         
-        // RECUPERA O CRONÔMETRO
         let backupTimer = lerMemoriaSegura('backupEstadoTimer', null);
         if (backupTimer && backupTimer.indexTarefaAtiva > -1) {
             indexTarefaAtiva = backupTimer.indexTarefaAtiva;
@@ -316,7 +314,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     atualizarRelogio();
                 } else {
                     ui.btnPausar.innerHTML = "⏸️ Pausar";
-                    tickTimer(); // Força uma atualização imediata para descontar o tempo fechado
+                    tickTimer(); 
+                    clearInterval(timerInterval);
                     timerInterval = setInterval(tickTimer, 1000);
                 }
             }
@@ -765,7 +764,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         
         atualizarRelogio();
-        salvarEstadoTimer(); // SALVA O ESTADO
+        salvarEstadoTimer(); 
         timerInterval = setInterval(tickTimer, 1000);
     }
 
@@ -777,7 +776,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (tempoTotalGastoSegundos > tempoOriginalSegundos && !emAtraso) {
                 emAtraso = true;
                 if(ui.painelTimer) ui.painelTimer.classList.add('timer-atraso');
-                salvarEstadoTimer(); // Atualiza a memória de que entrou em atraso
+                salvarEstadoTimer(); 
                 alert(`⏰ O tempo previsto para '${tarefasNaMemoria[indexTarefaAtiva].name}' acabou! Contando atraso.`);
             }
             atualizarRelogio();
@@ -810,16 +809,18 @@ document.addEventListener("DOMContentLoaded", () => {
             ui.painelTimer.classList.remove('timer-atraso');
         }
         indexTarefaAtiva = -1;
-        salvarEstadoTimer(); // Limpa a memória do timer
+        salvarEstadoTimer(); 
     }
 
+    // --- CORREÇÃO DA ARQUITETURA DE PAUSA/RETOMADA ---
     addEv(ui.btnPausar, 'click', () => {
         timerPausado = !timerPausado;
         if (timerPausado) {
             if(ui.btnPausar) ui.btnPausar.innerHTML = "▶️ Retomar"; 
             tempoAcumuladoAntesPausa = tempoTotalGastoSegundos;
             momentoPausa = new Date(); 
-            salvarEstadoTimer(); // SALVA ESTADO PAUSADO
+            clearInterval(timerInterval); // DESLIGA O MOTOR
+            salvarEstadoTimer(); 
         } else {
             if(ui.btnPausar) ui.btnPausar.innerHTML = "⏸️ Pausar";
             timestampInicioTick = Date.now();
@@ -837,7 +838,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 momentoPausa = null; desenharTabela(); 
             }
-            salvarEstadoTimer(); // SALVA ESTADO RETOMADO
+            clearInterval(timerInterval); // LIMPEZA PREVENTIVA
+            timerInterval = setInterval(tickTimer, 1000); // LIGA O MOTOR NOVAMENTE
+            salvarEstadoTimer(); 
         }
     });
 
