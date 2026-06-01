@@ -171,6 +171,11 @@
 
     <div id="resumo-topo" class="resumo-topo"></div>
 
+    <div id="acoes-tabela" class="label-row" style="display: none; margin-top: 15px; margin-bottom: 5px;">
+        <label style="color: var(--primary-color);">📋 Lista Ativa:</label>
+        <button id="btn-limpar-tabela" class="btn-limpar">🗑️ Apagar tudo</button>
+    </div>
+
     <div id="painel-timer" class="timer-container">
         <div id="timer-nome" class="timer-task-name">Tarefa</div>
         <div id="timer-relogio" class="timer-display">00:00</div>
@@ -217,6 +222,8 @@ document.addEventListener("DOMContentLoaded", () => {
         containerRotinas: document.getElementById('container-rotinas'),
         resultadoDiv: document.getElementById('resultado'),
         resumoTopo: document.getElementById('resumo-topo'),
+        acoesTabela: document.getElementById('acoes-tabela'), // Novo Controle
+        btnLimparTabela: document.getElementById('btn-limpar-tabela'), // Novo Botão
         painelTimer: document.getElementById('painel-timer'),
         btnPausar: document.getElementById('btn-pausar'),
         btnConcluir: document.getElementById('btn-concluir'),
@@ -256,6 +263,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     addEv(ui.btnLimparTexto, 'click', () => {
         if (ui.txtEntrada) { ui.txtEntrada.value = ''; ui.txtEntrada.focus(); }
+    });
+
+    // --- NOVO: Botão para apagar toda a lista ativa de tarefas ---
+    addEv(ui.btnLimparTabela, 'click', () => {
+        if(confirm("Tem certeza que deseja cancelar e apagar todas as tarefas desta lista ativa?")) {
+            pararCronometroTotalmente();
+            tarefasNaMemoria = [];
+            tarefasConcluidasHoje = false; // Impede que toque a música por apenas limpar
+            desenharTabela();
+        }
     });
 
     let logDiario = lerMemoriaSegura('logDiarioConcluidas', { data: new Date().toLocaleDateString('pt-BR'), tarefas: [] });
@@ -347,10 +364,17 @@ document.addEventListener("DOMContentLoaded", () => {
         
         const ctx = new AudioContext();
         const melodia = [
-            { f: 659.25, d: 0.4,  t: 0.0 }, { f: 523.25, d: 0.15, t: 0.45 }, { f: 392.00, d: 0.15, t: 0.65 },
-            { f: 523.25, d: 0.15, t: 0.85 }, { f: 659.25, d: 0.15, t: 1.05 }, { f: 783.99, d: 0.6,  t: 1.25 },
-            { f: 698.46, d: 0.15, t: 1.95 }, { f: 659.25, d: 0.15, t: 2.15 }, { f: 587.33, d: 0.15, t: 2.35 },
-            { f: 523.25, d: 0.15, t: 2.55 }, { f: 587.33, d: 0.8,  t: 2.75 } 
+            { f: 659.25, d: 0.4,  t: 0.0 }, 
+            { f: 523.25, d: 0.15, t: 0.45 },
+            { f: 392.00, d: 0.15, t: 0.65 },
+            { f: 523.25, d: 0.15, t: 0.85 },
+            { f: 659.25, d: 0.15, t: 1.05 },
+            { f: 783.99, d: 0.6,  t: 1.25 },
+            { f: 698.46, d: 0.15, t: 1.95 },
+            { f: 659.25, d: 0.15, t: 2.15 },
+            { f: 587.33, d: 0.15, t: 2.35 },
+            { f: 523.25, d: 0.15, t: 2.55 },
+            { f: 587.33, d: 0.8,  t: 2.75 } 
         ];
 
         melodia.forEach(nota => {
@@ -482,7 +506,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     renderizarRotinas();
 
-    // --- REESTRUTURAÇÃO: MOTOR DE CAPTURA DE VOZ BLINDADO (FRESH INSTANCE) ---
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let isRecording = false;
     let recognitionInstance = null;
@@ -493,7 +516,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (recognitionInstance) recognitionInstance.stop();
             } else {
                 try {
-                    // Instancia um novo motor de captura a cada execução
                     recognitionInstance = new SpeechRecognition();
                     recognitionInstance.lang = 'pt-BR';
                     recognitionInstance.continuous = true;
@@ -530,7 +552,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             ui.btnVoz.classList.remove('ouvindo');
                             ui.btnVoz.textContent = "🎤 Falar Tarefa";
                         }
-                        recognitionInstance = null; // Limpa o objeto da memória do navegador
+                        recognitionInstance = null; 
                     };
 
                     recognitionInstance.start();
@@ -549,9 +571,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
     addEv(ui.btnCalcular, 'click', () => {
         if(!ui.horaInicio || !ui.txtEntrada) return;
+        
+        // --- NOVO: Lógica do Relógio Inteligente ---
+        const agoraCalc = new Date();
+        let [hc, mc] = ui.horaInicio.value.split(':').map(Number);
+        let minutosInput = hc * 60 + mc;
+        let minutosAgora = agoraCalc.getHours() * 60 + agoraCalc.getMinutes();
+
+        // Só atualiza para a hora atual se a hora preenchida for no passado (ou no momento em que abriu o app)
+        // Isso preserva o direito do usuário de planejar tarefas no futuro.
+        if (minutosInput <= minutosAgora) {
+            const hh = String(agoraCalc.getHours()).padStart(2, '0');
+            const mm = String(agoraCalc.getMinutes()).padStart(2, '0');
+            ui.horaInicio.value = `${hh}:${mm}`;
+        }
+        // ------------------------------------------
+
         horarioDeInicio = ui.horaInicio.value;
         const text = ui.txtEntrada.value.toLowerCase();
-        if (!horarioDeInicio || !text.trim()) { alert("Digite alguma tarefa primeiro."); return; }
+        if (!text.trim()) { alert("Digite alguma tarefa primeiro."); return; }
 
         let rawTasks = text.split(/,\s*|\s+e\s+|\s+depois\s+|\s+em seguida\s+/i);
         tarefasNaMemoria = []; 
@@ -773,6 +811,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!ui.resultadoDiv || !ui.resumoTopo) return;
         
         if (tarefasNaMemoria.length === 0) {
+            if (ui.acoesTabela) ui.acoesTabela.style.display = "none";
+            
             if (tarefasConcluidasHoje) {
                 ui.resultadoDiv.innerHTML = `
                     <div class="trofeu-container">
@@ -796,6 +836,9 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             return;
         }
+
+        // MOSTRA O BOTÃO "APAGAR TUDO" DA TABELA
+        if (ui.acoesTabela) ui.acoesTabela.style.display = "flex";
 
         let [hours, minutes] = horarioDeInicio.split(':').map(Number);
         let currentTime = new Date(2000, 0, 1, hours, minutes); 
