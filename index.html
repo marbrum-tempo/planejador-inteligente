@@ -16,6 +16,16 @@
         h1 { font-size: 20px; margin-top: 0; margin-bottom: 15px; text-align: center; }
         label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; }
         
+        /* CHAVE LIGA/DESLIGA DA TELA */
+        .switch-container { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; background: #eafbee; padding: 10px 12px; border-radius: 8px; border: 1px solid #abf5d1; }
+        .switch-label { font-size: 14px; font-weight: 600; color: #006644; margin: 0; display: flex; align-items: center; gap: 5px; }
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; flex: none; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        input:checked + .slider { background-color: #36b37e; }
+        input:checked + .slider:before { transform: translateX(20px); }
+
         .label-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px; }
         .label-row label { margin-bottom: 0; }
         .btn-limpar { background: none; border: none; color: #de350b; font-size: 13px; font-weight: 600; cursor: pointer; padding: 0; margin: 0; width: auto; flex: none; transition: 0.2s; }
@@ -137,6 +147,15 @@
 <div class="container">
     <h1>✅ Planejador Inteligente</h1>
     
+    <!-- NOVO: CHAVE MANTER TELA LIGADA -->
+    <div class="switch-container" id="container-wakelock">
+        <span class="switch-label">💡 Manter tela sempre ligada</span>
+        <label class="switch">
+            <input type="checkbox" id="toggle-tela">
+            <span class="slider"></span>
+        </label>
+    </div>
+
     <label>Horário de Início:</label>
     <input type="time" id="hora-inicio">
 
@@ -236,12 +255,68 @@ document.addEventListener("DOMContentLoaded", () => {
         painelConcluidas: document.getElementById('painel-concluidas'),
         listaConcluidas: document.getElementById('lista-concluidas'),
         resumoConcluidas: document.getElementById('resumo-concluidas'),
-        btnLimparConcluidas: document.getElementById('btn-limpar-concluidas')
+        btnLimparConcluidas: document.getElementById('btn-limpar-concluidas'),
+        toggleTela: document.getElementById('toggle-tela'),
+        containerWakelock: document.getElementById('container-wakelock')
     };
 
     function addEv(elemento, evento, funcao) {
         if (elemento) elemento.addEventListener(evento, funcao);
     }
+
+    // --- NOVA LÓGICA: WAKE LOCK API (Manter tela ligada) ---
+    let wakeLock = null;
+    
+    async function requestWakeLock() {
+        try {
+            wakeLock = await navigator.wakeLock.request('screen');
+        } catch (err) {
+            console.error("Falha ao ativar Wake Lock:", err.message);
+            ui.toggleTela.checked = false; // Desmarca se houver erro ou bloqueio do navegador
+            salvarMemoriaSegura('prefManterTela', false);
+        }
+    }
+
+    if ('wakeLock' in navigator) {
+        // Carrega preferência do usuário salva na memória
+        let prefTelaSalva = lerMemoriaSegura('prefManterTela', false);
+        if (prefTelaSalva) {
+            ui.toggleTela.checked = true;
+            // O navegador pode bloquear requisições automáticas sem clique do usuário,
+            // mas tentamos acionar caso o usuário interaja logo depois com a página
+            document.addEventListener('click', async function initWake() {
+                if(ui.toggleTela.checked && wakeLock === null) {
+                    await requestWakeLock();
+                }
+                document.removeEventListener('click', initWake); // Remove o listener após o primeiro clique bem-sucedido
+            }, { once: true });
+        }
+
+        // Listener do Switch On/Off
+        addEv(ui.toggleTela, 'change', async () => {
+            salvarMemoriaSegura('prefManterTela', ui.toggleTela.checked);
+            if (ui.toggleTela.checked) {
+                await requestWakeLock();
+            } else {
+                if (wakeLock !== null) {
+                    wakeLock.release();
+                    wakeLock = null;
+                }
+            }
+        });
+
+        // O celular desliga o Wake Lock automaticamente ao minimizar.
+        // Essa função religa a tela quando você abre o aplicativo de novo!
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLock !== null && document.visibilityState === 'visible' && ui.toggleTela.checked) {
+                await requestWakeLock();
+            }
+        });
+    } else {
+        // Se o navegador do celular não suportar a tecnologia (iOS muito antigo), a chave some para não confundir
+        ui.containerWakelock.style.display = 'none';
+    }
+    // --------------------------------------------------------
 
     let tarefasNaMemoria = []; 
     let horarioDeInicio = "11:00";
@@ -257,7 +332,6 @@ document.addEventListener("DOMContentLoaded", () => {
     let timestampInicioTick = 0;
     let tempoAcumuladoAntesPausa = 0;
 
-    // --- FUNÇÃO PARA SALVAR O ESTADO DO CRONÔMETRO ---
     function salvarEstadoTimer() {
         salvarMemoriaSegura('backupEstadoTimer', {
             indexTarefaAtiva,
@@ -281,7 +355,6 @@ document.addEventListener("DOMContentLoaded", () => {
         ui.horaInicio.value = String(agoraInit.getHours()).padStart(2, '0') + ':' + String(agoraInit.getMinutes()).padStart(2, '0');
     }
 
-    // --- CARREGAMENTO INICIAL DO ESTADO (AO ABRIR O APLICATIVO) ---
     let backupTexto = lerMemoriaSegura('backupTextoEntrada', '');
     if (backupTexto && ui.txtEntrada) { ui.txtEntrada.value = backupTexto; }
 
@@ -812,14 +885,13 @@ document.addEventListener("DOMContentLoaded", () => {
         salvarEstadoTimer(); 
     }
 
-    // --- CORREÇÃO DA ARQUITETURA DE PAUSA/RETOMADA ---
     addEv(ui.btnPausar, 'click', () => {
         timerPausado = !timerPausado;
         if (timerPausado) {
             if(ui.btnPausar) ui.btnPausar.innerHTML = "▶️ Retomar"; 
             tempoAcumuladoAntesPausa = tempoTotalGastoSegundos;
             momentoPausa = new Date(); 
-            clearInterval(timerInterval); // DESLIGA O MOTOR
+            clearInterval(timerInterval); 
             salvarEstadoTimer(); 
         } else {
             if(ui.btnPausar) ui.btnPausar.innerHTML = "⏸️ Pausar";
@@ -838,8 +910,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 momentoPausa = null; desenharTabela(); 
             }
-            clearInterval(timerInterval); // LIMPEZA PREVENTIVA
-            timerInterval = setInterval(tickTimer, 1000); // LIGA O MOTOR NOVAMENTE
+            clearInterval(timerInterval); 
+            timerInterval = setInterval(tickTimer, 1000); 
             salvarEstadoTimer(); 
         }
     });
