@@ -25,8 +25,19 @@
             width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border-color);
             border-radius: 5px; font-size: 16px; box-sizing: border-box; font-family: inherit;
         }
-        textarea { resize: vertical; min-height: 80px; margin-bottom: 5px; }
+        textarea { resize: vertical; min-height: 80px; margin-bottom: 10px; }
 
+        /* Estilo para Botões de Largura Total */
+        button { padding: 12px; border: none; border-radius: 5px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; box-sizing: border-box; }
+        .btn-full { width: 100%; display: block; margin-bottom: 15px; }
+        
+        .btn-voz { background-color: #ff5630; color: white; }
+        .btn-voz:hover { background-color: #de350b; }
+        .btn-voz.ouvindo { background-color: #36b37e; }
+        .btn-calcular { background-color: var(--primary-color); color: white; margin-bottom: 20px; }
+        .btn-calcular:hover { background-color: var(--primary-hover); }
+
+        /* BIBLIOTECA DE TAREFAS */
         .biblioteca-details {
             background-color: #f9fafc; border: 1px solid var(--border-color);
             padding: 12px; border-radius: 8px; margin-bottom: 15px; transition: all 0.3s;
@@ -58,14 +69,6 @@
         }
         .btn-del-chip:hover { opacity: 1; color: white; background-color: #de350b; }
 
-        .buttons { display: flex; gap: 8px; margin-bottom: 20px; }
-        button { flex: 1; padding: 12px; border: none; border-radius: 5px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
-        .btn-voz { background-color: #ff5630; color: white; }
-        .btn-voz:hover { background-color: #de350b; }
-        .btn-voz.ouvindo { background-color: #36b37e; }
-        .btn-calcular { background-color: var(--primary-color); color: white; }
-        .btn-calcular:hover { background-color: var(--primary-hover); }
-
         .rotinas-section { background-color: #f9fafc; border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; margin-bottom: 15px; }
         .rotinas-header { font-size: 14px; font-weight: 600; margin-bottom: 10px; color: #42526e; }
         .rotina-salvar-box { display: flex; gap: 8px; margin-bottom: 10px; }
@@ -81,8 +84,8 @@
         .timer-display { font-size: 46px; font-weight: bold; color: #006644; font-variant-numeric: tabular-nums; margin: 10px 0 5px 0; }
         .timer-fim-estimado { font-size: 18px; font-weight: 600; color: #00875a; margin-bottom: 15px; }
         .timer-buttons { display: flex; gap: 10px; }
-        .btn-pausar { background-color: #ff991f; color: white; }
-        .btn-concluir { background-color: #36b37e; color: white; }
+        .btn-pausar { flex: 1; background-color: #ff991f; color: white; }
+        .btn-concluir { flex: 1; background-color: #36b37e; color: white; }
 
         .timer-atraso { background-color: #ffebe6; border-color: #de350b; }
         .timer-atraso .timer-display { color: #de350b; }
@@ -107,7 +110,6 @@
         }
         @keyframes fade-in { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* NOVA SEÇÃO: TAREFAS CONCLUÍDAS DO DIA */
         .concluidas-section { background-color: #eafbee; border: 1px solid #36b37e; padding: 12px; border-radius: 8px; margin-bottom: 20px; display: none; }
         .concluidas-header { font-size: 14px; font-weight: 600; margin-bottom: 10px; color: #006644; display: flex; align-items: center; gap: 5px; }
         .concluidas-lista { list-style: none; padding: 0; margin: 0 0 10px 0; }
@@ -121,6 +123,7 @@
         .db-title { font-size: 16px; margin-top: 0; margin-bottom: 5px; color: #42526e; }
         .db-subtitle { font-size: 12px; color: #6b778c; margin-bottom: 10px; margin-top: 0; }
         .db-inputs { display: flex; gap: 8px; margin-bottom: 10px; }
+        .db-inputs input { margin-bottom: 0; }
     </style>
 </head>
 <body>
@@ -135,7 +138,9 @@
         <label>Tarefas a Fazer:</label>
         <button id="btn-limpar-texto" class="btn-limpar">🗑️ Apagar tudo</button>
     </div>
-    <textarea id="txt-entrada" placeholder="Fale ou digite as tarefas. Ex: 'Lavar louça 5', 'Varrer sala'"></textarea>
+    <textarea id="txt-entrada" placeholder="Fale ou digite as tarefas, separando com vírgulas. Você pode falar ou escrever a tarefa e dizer o tempo. Ex: 'Varrer sala 8, '. A tarefa será adicionada com 8 minutos automaticamente."></textarea>
+
+    <button id="btn-voz" class="btn-voz btn-full">🎤 Falar Tarefa</button>
 
     <details class="biblioteca-details">
         <summary class="biblioteca-summary">⚡ Biblioteca de Tarefas</summary>
@@ -155,10 +160,7 @@
         <div id="container-rotinas" class="rotinas-lista"></div>
     </div>
 
-    <div class="buttons">
-        <button id="btn-voz" class="btn-voz">🎤 Gravar Voz</button>
-        <button id="btn-calcular" class="btn-calcular">Calcular Tempo</button>
-    </div>
+    <button id="btn-calcular" class="btn-calcular btn-full">Calcular Tempo das Tarefas</button>
 
     <div id="resumo-topo" class="resumo-topo"></div>
 
@@ -187,10 +189,10 @@
         <h3 class="db-title">⚙️ Adicionar Novo Tempo Fixo</h3>
         <p class="db-subtitle">O app aprende sozinho, mas se quiser adicionar um tempo específico, digite aqui.</p>
         <div class="db-inputs">
-            <input type="text" id="nova-palavra" placeholder="Ex: limpar teclado" style="flex: 2; margin:0;">
-            <input type="number" id="novo-tempo" placeholder="Min" style="flex: 1; margin:0;">
+            <input type="text" id="nova-palavra" placeholder="Ex: limpar teclado" style="flex: 2;">
+            <input type="number" id="novo-tempo" placeholder="Min" style="flex: 1;">
         </div>
-        <button id="btn-salvar-tempo" class="btn-calcular" style="width: 100%; background-color: #42526e;">💾 Salvar Fixo no Banco</button>
+        <button id="btn-salvar-tempo" class="btn-calcular btn-full" style="background-color: #42526e; margin-bottom: 0;">💾 Salvar Fixo no Banco</button>
     </div>
 </div>
 
@@ -231,8 +233,6 @@ document.addEventListener("DOMContentLoaded", () => {
         novaPalavra: document.getElementById('nova-palavra'),
         novoTempo: document.getElementById('novo-tempo'),
         btnSalvarTempo: document.getElementById('btn-salvar-tempo'),
-        
-        // Elementos das Tarefas Concluídas
         painelConcluidas: document.getElementById('painel-concluidas'),
         listaConcluidas: document.getElementById('lista-concluidas'),
         resumoConcluidas: document.getElementById('resumo-concluidas'),
@@ -264,10 +264,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (ui.txtEntrada) { ui.txtEntrada.value = ''; ui.txtEntrada.focus(); }
     });
 
-    // --- NOVA INTELIGÊNCIA: TAREFAS CONCLUÍDAS DO DIA ---
     let logDiario = lerMemoriaSegura('logDiarioConcluidas', { data: new Date().toLocaleDateString('pt-BR'), tarefas: [] });
     
-    // Se o dia virou, limpa o histórico automaticamente!
     if (logDiario.data !== new Date().toLocaleDateString('pt-BR')) {
         logDiario = { data: new Date().toLocaleDateString('pt-BR'), tarefas: [] };
         salvarMemoriaSegura('logDiarioConcluidas', logDiario);
@@ -307,7 +305,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    renderizarConcluidas(); // Carrega ao abrir o site
+    renderizarConcluidas(); 
 
     const bancoPadraoNumeros = {
         "imposto": 90, "contas": 20, "banho": 15, "barba": 10,
@@ -523,7 +521,7 @@ document.addEventListener("DOMContentLoaded", () => {
         recognition.onerror = (event) => { if (event.error === 'not-allowed') alert("Microfone negado."); };
         recognition.onend = () => { 
             isRecording = false; 
-            if(ui.btnVoz) { ui.btnVoz.classList.remove('ouvindo'); ui.btnVoz.textContent = "🎤 Gravar Voz"; }
+            if(ui.btnVoz) { ui.btnVoz.classList.remove('ouvindo'); ui.btnVoz.textContent = "🎤 Falar Tarefa"; }
         };
     } else { 
         if(ui.btnVoz) { ui.btnVoz.disabled = true; ui.btnVoz.textContent = "Voz não suportada"; }
@@ -732,7 +730,6 @@ document.addEventListener("DOMContentLoaded", () => {
             let tarefaAtual = tarefasNaMemoria[indexTarefaAtiva];
             let chaveDB = tarefaAtual.dbKey;
             
-            // 1. Atualiza a média no banco principal
             if (bancoDeTempos[chaveDB]) {
                 bancoDeTempos[chaveDB].historico.push(minutosReais);
                 if (bancoDeTempos[chaveDB].historico.length > 5) bancoDeTempos[chaveDB].historico.shift();
@@ -743,7 +740,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 salvarMemoriaSegura('meuBancoInteligente', bancoDeTempos);
             }
 
-            // 2. REGISTRA A TAREFA NO DIÁRIO DE VITÓRIAS
             logDiario.tarefas.push({ nome: tarefaAtual.name, tempo: minutosReais });
             salvarMemoriaSegura('logDiarioConcluidas', logDiario);
             renderizarConcluidas();
