@@ -347,17 +347,10 @@ document.addEventListener("DOMContentLoaded", () => {
         
         const ctx = new AudioContext();
         const melodia = [
-            { f: 659.25, d: 0.4,  t: 0.0 }, 
-            { f: 523.25, d: 0.15, t: 0.45 },
-            { f: 392.00, d: 0.15, t: 0.65 },
-            { f: 523.25, d: 0.15, t: 0.85 },
-            { f: 659.25, d: 0.15, t: 1.05 },
-            { f: 783.99, d: 0.6,  t: 1.25 },
-            { f: 698.46, d: 0.15, t: 1.95 },
-            { f: 659.25, d: 0.15, t: 2.15 },
-            { f: 587.33, d: 0.15, t: 2.35 },
-            { f: 523.25, d: 0.15, t: 2.55 },
-            { f: 587.33, d: 0.8,  t: 2.75 } 
+            { f: 659.25, d: 0.4,  t: 0.0 }, { f: 523.25, d: 0.15, t: 0.45 }, { f: 392.00, d: 0.15, t: 0.65 },
+            { f: 523.25, d: 0.15, t: 0.85 }, { f: 659.25, d: 0.15, t: 1.05 }, { f: 783.99, d: 0.6,  t: 1.25 },
+            { f: 698.46, d: 0.15, t: 1.95 }, { f: 659.25, d: 0.15, t: 2.15 }, { f: 587.33, d: 0.15, t: 2.35 },
+            { f: 523.25, d: 0.15, t: 2.55 }, { f: 587.33, d: 0.8,  t: 2.75 } 
         ];
 
         melodia.forEach(nota => {
@@ -489,35 +482,69 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     renderizarRotinas();
 
+    // --- REESTRUTURAÇÃO: MOTOR DE CAPTURA DE VOZ BLINDADO (FRESH INSTANCE) ---
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let isRecording = false;
+    let recognitionInstance = null;
+
     if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'pt-BR'; recognition.continuous = true; recognition.interimResults = false;
-        
         addEv(ui.btnVoz, 'click', () => {
-            if (isRecording) { recognition.stop(); } 
-            else { try { recognition.start(); } catch(e) { alert("Erro de microfone."); } }
-        });
-        recognition.onstart = () => { 
-            isRecording = true; 
-            if(ui.btnVoz) { ui.btnVoz.classList.add('ouvindo'); ui.btnVoz.textContent = "⏹️ Parar (Ouvindo...)"; }
-        };
-        recognition.onresult = (event) => {
-            let newText = "";
-            for (let i = event.resultIndex; i < event.results.length; ++i) { if (event.results[i].isFinal) newText += event.results[i][0].transcript; }
-            newText = newText.replace(/[.?!]/g, '').trim();
-            if (newText && ui.txtEntrada) {
-                const currentText = ui.txtEntrada.value.trim();
-                ui.txtEntrada.value = currentText ? currentText + ", " + newText : newText;
+            if (isRecording) {
+                if (recognitionInstance) recognitionInstance.stop();
+            } else {
+                try {
+                    // Instancia um novo motor de captura a cada execução
+                    recognitionInstance = new SpeechRecognition();
+                    recognitionInstance.lang = 'pt-BR';
+                    recognitionInstance.continuous = true;
+                    recognitionInstance.interimResults = false;
+
+                    recognitionInstance.onstart = () => {
+                        isRecording = true;
+                        if (ui.btnVoz) {
+                            ui.btnVoz.classList.add('ouvindo');
+                            ui.btnVoz.textContent = "⏹️ Parar (Ouvindo...)";
+                        }
+                    };
+
+                    recognitionInstance.onresult = (event) => {
+                        let newText = "";
+                        for (let i = event.resultIndex; i < event.results.length; ++i) {
+                            if (event.results[i].isFinal) newText += event.results[i][0].transcript;
+                        }
+                        newText = newText.replace(/[.?!]/g, '').trim();
+                        if (newText && ui.txtEntrada) {
+                            const currentText = ui.txtEntrada.value.trim();
+                            ui.txtEntrada.value = currentText ? currentText + ", " + newText : newText;
+                        }
+                    };
+
+                    recognitionInstance.onerror = (event) => {
+                        console.error("Erro de reconhecimento:", event.error);
+                        if (event.error === 'not-allowed') alert("Permissão de microfone negada.");
+                    };
+
+                    recognitionInstance.onend = () => {
+                        isRecording = false;
+                        if (ui.btnVoz) {
+                            ui.btnVoz.classList.remove('ouvindo');
+                            ui.btnVoz.textContent = "🎤 Falar Tarefa";
+                        }
+                        recognitionInstance = null; // Limpa o objeto da memória do navegador
+                    };
+
+                    recognitionInstance.start();
+                } catch (e) {
+                    alert("Erro ao inicializar o microfone.");
+                    console.error(e);
+                }
             }
-        };
-        recognition.onerror = (event) => { if (event.error === 'not-allowed') alert("Microfone negado."); };
-        recognition.onend = () => { 
-            isRecording = false; 
-            if(ui.btnVoz) { ui.btnVoz.classList.remove('ouvindo'); ui.btnVoz.textContent = "🎤 Falar Tarefa"; }
-        };
-    } else { 
-        if(ui.btnVoz) { ui.btnVoz.disabled = true; ui.btnVoz.textContent = "Voz não suportada"; }
+        });
+    } else {
+        if (ui.btnVoz) {
+            ui.btnVoz.disabled = true;
+            ui.btnVoz.textContent = "Voz não suportada";
+        }
     }
 
     addEv(ui.btnCalcular, 'click', () => {
