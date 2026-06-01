@@ -148,7 +148,6 @@
 
     <button id="btn-voz" class="btn-voz btn-full">🎤 Falar Tarefa</button>
 
-    <!-- BIBLIOTECA DE TAREFAS -->
     <details class="biblioteca-details">
         <summary class="biblioteca-summary">⚡ Biblioteca de Tarefas</summary>
         <div class="biblioteca-controls">
@@ -255,12 +254,25 @@ document.addEventListener("DOMContentLoaded", () => {
     let momentoPausa = null; 
     let tarefasConcluidasHoje = false; 
     let jaTocouTrofeu = false;
-
-    // --- VARIÁVEIS DO NOVO MOTOR DE TEMPO ABSOLUTO ---
     let timestampInicioTick = 0;
     let tempoAcumuladoAntesPausa = 0;
 
-    // AUTO-SAVE: Salva texto sendo digitado para não perder se o app fechar
+    // --- FUNÇÃO PARA SALVAR O ESTADO DO CRONÔMETRO ---
+    function salvarEstadoTimer() {
+        salvarMemoriaSegura('backupEstadoTimer', {
+            indexTarefaAtiva,
+            timestampInicioTick,
+            tempoAcumuladoAntesPausa,
+            timerPausado,
+            tempoOriginalSegundos,
+            emAtraso,
+            momentoPausa: momentoPausa ? momentoPausa.getTime() : null,
+            tarefasConcluidasHoje,
+            tempoTotalGastoSegundos
+        });
+    }
+
+    // AUTO-SAVE DA CAIXA DE TEXTO
     addEv(ui.txtEntrada, 'input', () => {
         salvarMemoriaSegura('backupTextoEntrada', ui.txtEntrada.value);
     });
@@ -270,7 +282,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ui.horaInicio.value = String(agoraInit.getHours()).padStart(2, '0') + ':' + String(agoraInit.getMinutes()).padStart(2, '0');
     }
 
-    // AUTO-LOAD: Recupera estado se o navegador matar a página por memória
+    // --- CARREGAMENTO INICIAL DO ESTADO (AO ABRIR O APLICATIVO) ---
     let backupTexto = lerMemoriaSegura('backupTextoEntrada', '');
     if (backupTexto && ui.txtEntrada) { ui.txtEntrada.value = backupTexto; }
 
@@ -279,7 +291,36 @@ document.addEventListener("DOMContentLoaded", () => {
         tarefasNaMemoria = backupLista.tarefas;
         horarioDeInicio = backupLista.horaIni;
         if(ui.horaInicio) ui.horaInicio.value = horarioDeInicio;
-        // Desenha a tabela com as tarefas que o usuário estava antes do fechamento
+        
+        // RECUPERA O CRONÔMETRO
+        let backupTimer = lerMemoriaSegura('backupEstadoTimer', null);
+        if (backupTimer && backupTimer.indexTarefaAtiva > -1) {
+            indexTarefaAtiva = backupTimer.indexTarefaAtiva;
+            timestampInicioTick = backupTimer.timestampInicioTick;
+            tempoAcumuladoAntesPausa = backupTimer.tempoAcumuladoAntesPausa;
+            timerPausado = backupTimer.timerPausado;
+            tempoOriginalSegundos = backupTimer.tempoOriginalSegundos;
+            emAtraso = backupTimer.emAtraso;
+            momentoPausa = backupTimer.momentoPausa ? new Date(backupTimer.momentoPausa) : null;
+            tarefasConcluidasHoje = backupTimer.tarefasConcluidasHoje;
+            tempoTotalGastoSegundos = backupTimer.tempoTotalGastoSegundos || 0;
+
+            if(ui.painelTimer && ui.timerNome && ui.btnPausar) {
+                ui.painelTimer.style.display = 'block';
+                ui.timerNome.textContent = tarefasNaMemoria[indexTarefaAtiva].name;
+                
+                if (emAtraso) ui.painelTimer.classList.add('timer-atraso');
+                
+                if (timerPausado) {
+                    ui.btnPausar.innerHTML = "▶️ Retomar";
+                    atualizarRelogio();
+                } else {
+                    ui.btnPausar.innerHTML = "⏸️ Pausar";
+                    tickTimer(); // Força uma atualização imediata para descontar o tempo fechado
+                    timerInterval = setInterval(tickTimer, 1000);
+                }
+            }
+        }
         setTimeout(desenharTabela, 100); 
     }
 
@@ -456,7 +497,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (atual === '') ui.txtEntrada.value = tarefaNome;
                 else if (atual.endsWith(',')) ui.txtEntrada.value = atual + ' ' + tarefaNome;
                 else ui.txtEntrada.value = atual + ', ' + tarefaNome;
-                salvarMemoriaSegura('backupTextoEntrada', ui.txtEntrada.value); // Salva auto
+                salvarMemoriaSegura('backupTextoEntrada', ui.txtEntrada.value); 
             };
 
             const btnDeletar = document.createElement('button');
@@ -559,7 +600,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         if (newText && ui.txtEntrada) {
                             const currentText = ui.txtEntrada.value.trim();
                             ui.txtEntrada.value = currentText ? currentText + ", " + newText : newText;
-                            salvarMemoriaSegura('backupTextoEntrada', ui.txtEntrada.value); // Salva auto
+                            salvarMemoriaSegura('backupTextoEntrada', ui.txtEntrada.value); 
                         }
                     };
 
@@ -707,8 +748,6 @@ document.addEventListener("DOMContentLoaded", () => {
         indexTarefaAtiva = index;
         
         tempoOriginalSegundos = tarefasNaMemoria[index].duration * 60;
-        
-        // NOVO MOTOR ABSOLUTO
         tempoTotalGastoSegundos = 0;
         tempoAcumuladoAntesPausa = 0;
         timestampInicioTick = Date.now(); 
@@ -726,18 +765,19 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         
         atualizarRelogio();
+        salvarEstadoTimer(); // SALVA O ESTADO
         timerInterval = setInterval(tickTimer, 1000);
     }
 
     function tickTimer() {
         if (!timerPausado) {
-            // Conta os milissegundos exatos desde o start ou último resume, blindando contra fechamento de tela
             let msPassados = Date.now() - timestampInicioTick;
             tempoTotalGastoSegundos = tempoAcumuladoAntesPausa + Math.floor(msPassados / 1000);
 
             if (tempoTotalGastoSegundos > tempoOriginalSegundos && !emAtraso) {
                 emAtraso = true;
                 if(ui.painelTimer) ui.painelTimer.classList.add('timer-atraso');
+                salvarEstadoTimer(); // Atualiza a memória de que entrou em atraso
                 alert(`⏰ O tempo previsto para '${tarefasNaMemoria[indexTarefaAtiva].name}' acabou! Contando atraso.`);
             }
             atualizarRelogio();
@@ -770,6 +810,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ui.painelTimer.classList.remove('timer-atraso');
         }
         indexTarefaAtiva = -1;
+        salvarEstadoTimer(); // Limpa a memória do timer
     }
 
     addEv(ui.btnPausar, 'click', () => {
@@ -778,6 +819,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if(ui.btnPausar) ui.btnPausar.innerHTML = "▶️ Retomar"; 
             tempoAcumuladoAntesPausa = tempoTotalGastoSegundos;
             momentoPausa = new Date(); 
+            salvarEstadoTimer(); // SALVA ESTADO PAUSADO
         } else {
             if(ui.btnPausar) ui.btnPausar.innerHTML = "⏸️ Pausar";
             timestampInicioTick = Date.now();
@@ -795,6 +837,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 momentoPausa = null; desenharTabela(); 
             }
+            salvarEstadoTimer(); // SALVA ESTADO RETOMADO
         }
     });
 
@@ -841,7 +884,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (tarefasNaMemoria.length === 0) {
             if (ui.acoesTabela) ui.acoesTabela.style.display = "none";
             
-            salvarMemoriaSegura('backupListaAtiva', null); // Limpa auto-save se terminou tudo
+            salvarMemoriaSegura('backupListaAtiva', null); 
             
             if (tarefasConcluidasHoje) {
                 ui.resultadoDiv.innerHTML = `
@@ -855,7 +898,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 if (ui.txtEntrada) { 
                     ui.txtEntrada.value = ''; 
-                    salvarMemoriaSegura('backupTextoEntrada', ''); // Zera o texto salvo também
+                    salvarMemoriaSegura('backupTextoEntrada', ''); 
                 }
                 
                 if (!jaTocouTrofeu) {
@@ -870,7 +913,6 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // AUTO-SAVE DA LISTA ATIVA
         salvarMemoriaSegura('backupListaAtiva', {
             tarefas: tarefasNaMemoria,
             horaIni: horarioDeInicio
