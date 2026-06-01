@@ -50,7 +50,6 @@
         .btn-calcular { background-color: var(--primary-color); color: white; margin-bottom: 20px; }
         .btn-calcular:hover { background-color: var(--primary-hover); }
 
-        /* BIBLIOTECA DE TAREFAS */
         .biblioteca-details {
             background-color: #f9fafc; border: 1px solid var(--border-color);
             padding: 12px; border-radius: 8px; margin-bottom: 15px; transition: all 0.3s;
@@ -149,6 +148,7 @@
 
     <button id="btn-voz" class="btn-voz btn-full">🎤 Falar Tarefa</button>
 
+    <!-- BIBLIOTECA DE TAREFAS -->
     <details class="biblioteca-details">
         <summary class="biblioteca-summary">⚡ Biblioteca de Tarefas</summary>
         <div class="biblioteca-controls">
@@ -222,8 +222,8 @@ document.addEventListener("DOMContentLoaded", () => {
         containerRotinas: document.getElementById('container-rotinas'),
         resultadoDiv: document.getElementById('resultado'),
         resumoTopo: document.getElementById('resumo-topo'),
-        acoesTabela: document.getElementById('acoes-tabela'), // Novo Controle
-        btnLimparTabela: document.getElementById('btn-limpar-tabela'), // Novo Botão
+        acoesTabela: document.getElementById('acoes-tabela'), 
+        btnLimparTabela: document.getElementById('btn-limpar-tabela'), 
         painelTimer: document.getElementById('painel-timer'),
         btnPausar: document.getElementById('btn-pausar'),
         btnConcluir: document.getElementById('btn-concluir'),
@@ -256,21 +256,47 @@ document.addEventListener("DOMContentLoaded", () => {
     let tarefasConcluidasHoje = false; 
     let jaTocouTrofeu = false;
 
+    // --- VARIÁVEIS DO NOVO MOTOR DE TEMPO ABSOLUTO ---
+    let timestampInicioTick = 0;
+    let tempoAcumuladoAntesPausa = 0;
+
+    // AUTO-SAVE: Salva texto sendo digitado para não perder se o app fechar
+    addEv(ui.txtEntrada, 'input', () => {
+        salvarMemoriaSegura('backupTextoEntrada', ui.txtEntrada.value);
+    });
+
     if (ui.horaInicio) {
         const agoraInit = new Date();
         ui.horaInicio.value = String(agoraInit.getHours()).padStart(2, '0') + ':' + String(agoraInit.getMinutes()).padStart(2, '0');
     }
 
+    // AUTO-LOAD: Recupera estado se o navegador matar a página por memória
+    let backupTexto = lerMemoriaSegura('backupTextoEntrada', '');
+    if (backupTexto && ui.txtEntrada) { ui.txtEntrada.value = backupTexto; }
+
+    let backupLista = lerMemoriaSegura('backupListaAtiva', null);
+    if (backupLista && backupLista.tarefas && backupLista.tarefas.length > 0) {
+        tarefasNaMemoria = backupLista.tarefas;
+        horarioDeInicio = backupLista.horaIni;
+        if(ui.horaInicio) ui.horaInicio.value = horarioDeInicio;
+        // Desenha a tabela com as tarefas que o usuário estava antes do fechamento
+        setTimeout(desenharTabela, 100); 
+    }
+
     addEv(ui.btnLimparTexto, 'click', () => {
-        if (ui.txtEntrada) { ui.txtEntrada.value = ''; ui.txtEntrada.focus(); }
+        if (ui.txtEntrada) { 
+            ui.txtEntrada.value = ''; 
+            salvarMemoriaSegura('backupTextoEntrada', '');
+            ui.txtEntrada.focus(); 
+        }
     });
 
-    // --- NOVO: Botão para apagar toda a lista ativa de tarefas ---
     addEv(ui.btnLimparTabela, 'click', () => {
         if(confirm("Tem certeza que deseja cancelar e apagar todas as tarefas desta lista ativa?")) {
             pararCronometroTotalmente();
             tarefasNaMemoria = [];
-            tarefasConcluidasHoje = false; // Impede que toque a música por apenas limpar
+            tarefasConcluidasHoje = false; 
+            salvarMemoriaSegura('backupListaAtiva', null); 
             desenharTabela();
         }
     });
@@ -364,17 +390,10 @@ document.addEventListener("DOMContentLoaded", () => {
         
         const ctx = new AudioContext();
         const melodia = [
-            { f: 659.25, d: 0.4,  t: 0.0 }, 
-            { f: 523.25, d: 0.15, t: 0.45 },
-            { f: 392.00, d: 0.15, t: 0.65 },
-            { f: 523.25, d: 0.15, t: 0.85 },
-            { f: 659.25, d: 0.15, t: 1.05 },
-            { f: 783.99, d: 0.6,  t: 1.25 },
-            { f: 698.46, d: 0.15, t: 1.95 },
-            { f: 659.25, d: 0.15, t: 2.15 },
-            { f: 587.33, d: 0.15, t: 2.35 },
-            { f: 523.25, d: 0.15, t: 2.55 },
-            { f: 587.33, d: 0.8,  t: 2.75 } 
+            { f: 659.25, d: 0.4,  t: 0.0 }, { f: 523.25, d: 0.15, t: 0.45 }, { f: 392.00, d: 0.15, t: 0.65 },
+            { f: 523.25, d: 0.15, t: 0.85 }, { f: 659.25, d: 0.15, t: 1.05 }, { f: 783.99, d: 0.6,  t: 1.25 },
+            { f: 698.46, d: 0.15, t: 1.95 }, { f: 659.25, d: 0.15, t: 2.15 }, { f: 587.33, d: 0.15, t: 2.35 },
+            { f: 523.25, d: 0.15, t: 2.55 }, { f: 587.33, d: 0.8,  t: 2.75 } 
         ];
 
         melodia.forEach(nota => {
@@ -437,6 +456,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (atual === '') ui.txtEntrada.value = tarefaNome;
                 else if (atual.endsWith(',')) ui.txtEntrada.value = atual + ' ' + tarefaNome;
                 else ui.txtEntrada.value = atual + ', ' + tarefaNome;
+                salvarMemoriaSegura('backupTextoEntrada', ui.txtEntrada.value); // Salva auto
             };
 
             const btnDeletar = document.createElement('button');
@@ -481,6 +501,7 @@ document.addEventListener("DOMContentLoaded", () => {
             btnCarregar.onclick = () => { 
                 if(ui.txtEntrada && ui.btnCalcular) {
                     ui.txtEntrada.value = textoRotina; 
+                    salvarMemoriaSegura('backupTextoEntrada', textoRotina);
                     ui.btnCalcular.click(); 
                 }
             };
@@ -538,6 +559,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         if (newText && ui.txtEntrada) {
                             const currentText = ui.txtEntrada.value.trim();
                             ui.txtEntrada.value = currentText ? currentText + ", " + newText : newText;
+                            salvarMemoriaSegura('backupTextoEntrada', ui.txtEntrada.value); // Salva auto
                         }
                     };
 
@@ -572,20 +594,16 @@ document.addEventListener("DOMContentLoaded", () => {
     addEv(ui.btnCalcular, 'click', () => {
         if(!ui.horaInicio || !ui.txtEntrada) return;
         
-        // --- NOVO: Lógica do Relógio Inteligente ---
         const agoraCalc = new Date();
         let [hc, mc] = ui.horaInicio.value.split(':').map(Number);
         let minutosInput = hc * 60 + mc;
         let minutosAgora = agoraCalc.getHours() * 60 + agoraCalc.getMinutes();
 
-        // Só atualiza para a hora atual se a hora preenchida for no passado (ou no momento em que abriu o app)
-        // Isso preserva o direito do usuário de planejar tarefas no futuro.
         if (minutosInput <= minutosAgora) {
             const hh = String(agoraCalc.getHours()).padStart(2, '0');
             const mm = String(agoraCalc.getMinutes()).padStart(2, '0');
             ui.horaInicio.value = `${hh}:${mm}`;
         }
-        // ------------------------------------------
 
         horarioDeInicio = ui.horaInicio.value;
         const text = ui.txtEntrada.value.toLowerCase();
@@ -689,7 +707,12 @@ document.addEventListener("DOMContentLoaded", () => {
         indexTarefaAtiva = index;
         
         tempoOriginalSegundos = tarefasNaMemoria[index].duration * 60;
+        
+        // NOVO MOTOR ABSOLUTO
         tempoTotalGastoSegundos = 0;
+        tempoAcumuladoAntesPausa = 0;
+        timestampInicioTick = Date.now(); 
+        
         timerPausado = false;
         emAtraso = false;
         momentoPausa = null;
@@ -708,7 +731,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function tickTimer() {
         if (!timerPausado) {
-            tempoTotalGastoSegundos++;
+            // Conta os milissegundos exatos desde o start ou último resume, blindando contra fechamento de tela
+            let msPassados = Date.now() - timestampInicioTick;
+            tempoTotalGastoSegundos = tempoAcumuladoAntesPausa + Math.floor(msPassados / 1000);
+
             if (tempoTotalGastoSegundos > tempoOriginalSegundos && !emAtraso) {
                 emAtraso = true;
                 if(ui.painelTimer) ui.painelTimer.classList.add('timer-atraso');
@@ -750,9 +776,11 @@ document.addEventListener("DOMContentLoaded", () => {
         timerPausado = !timerPausado;
         if (timerPausado) {
             if(ui.btnPausar) ui.btnPausar.innerHTML = "▶️ Retomar"; 
+            tempoAcumuladoAntesPausa = tempoTotalGastoSegundos;
             momentoPausa = new Date(); 
         } else {
             if(ui.btnPausar) ui.btnPausar.innerHTML = "⏸️ Pausar";
+            timestampInicioTick = Date.now();
             if (momentoPausa) {
                 let atrasoMilisegundos = new Date() - momentoPausa;
                 let [h, m] = horarioDeInicio.split(':').map(Number);
@@ -813,6 +841,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (tarefasNaMemoria.length === 0) {
             if (ui.acoesTabela) ui.acoesTabela.style.display = "none";
             
+            salvarMemoriaSegura('backupListaAtiva', null); // Limpa auto-save se terminou tudo
+            
             if (tarefasConcluidasHoje) {
                 ui.resultadoDiv.innerHTML = `
                     <div class="trofeu-container">
@@ -823,7 +853,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 `;
                 ui.resumoTopo.style.display = "none";
                 
-                if (ui.txtEntrada) { ui.txtEntrada.value = ''; }
+                if (ui.txtEntrada) { 
+                    ui.txtEntrada.value = ''; 
+                    salvarMemoriaSegura('backupTextoEntrada', ''); // Zera o texto salvo também
+                }
                 
                 if (!jaTocouTrofeu) {
                     tocarSintetizadorVitoria();
@@ -837,7 +870,12 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // MOSTRA O BOTÃO "APAGAR TUDO" DA TABELA
+        // AUTO-SAVE DA LISTA ATIVA
+        salvarMemoriaSegura('backupListaAtiva', {
+            tarefas: tarefasNaMemoria,
+            horaIni: horarioDeInicio
+        });
+
         if (ui.acoesTabela) ui.acoesTabela.style.display = "flex";
 
         let [hours, minutes] = horarioDeInicio.split(':').map(Number);
