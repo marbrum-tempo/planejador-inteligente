@@ -147,7 +147,6 @@
 <div class="container">
     <h1>✅ Planejador Inteligente</h1>
     
-    <!-- NOVO: CHAVE MANTER TELA LIGADA -->
     <div class="switch-container" id="container-wakelock">
         <span class="switch-label">💡 Manter tela sempre ligada</span>
         <label class="switch">
@@ -163,7 +162,7 @@
         <label>Tarefas a Fazer:</label>
         <button id="btn-limpar-texto" class="btn-limpar">🗑️ Apagar tudo</button>
     </div>
-    <textarea id="txt-entrada" placeholder="Fale ou digite as tarefas, separando com vírgulas. Você pode falar ou escrever a tarefa e dizer o tempo. Ex: 'Varrer sala 8, '. A tarefa será adicionada com 8 minutos automaticamente."></textarea>
+    <textarea id="txt-entrada" placeholder="Fale ou digite as tarefas com o tempo (Ex: 'varrer o chão 6, arrumar a cama 5')"></textarea>
 
     <button id="btn-voz" class="btn-voz btn-full">🎤 Falar Tarefa</button>
 
@@ -264,7 +263,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (elemento) elemento.addEventListener(evento, funcao);
     }
 
-    // --- NOVA LÓGICA: WAKE LOCK API (Manter tela ligada) ---
     let wakeLock = null;
     
     async function requestWakeLock() {
@@ -272,27 +270,23 @@ document.addEventListener("DOMContentLoaded", () => {
             wakeLock = await navigator.wakeLock.request('screen');
         } catch (err) {
             console.error("Falha ao ativar Wake Lock:", err.message);
-            ui.toggleTela.checked = false; // Desmarca se houver erro ou bloqueio do navegador
+            ui.toggleTela.checked = false; 
             salvarMemoriaSegura('prefManterTela', false);
         }
     }
 
     if ('wakeLock' in navigator) {
-        // Carrega preferência do usuário salva na memória
         let prefTelaSalva = lerMemoriaSegura('prefManterTela', false);
         if (prefTelaSalva) {
             ui.toggleTela.checked = true;
-            // O navegador pode bloquear requisições automáticas sem clique do usuário,
-            // mas tentamos acionar caso o usuário interaja logo depois com a página
             document.addEventListener('click', async function initWake() {
                 if(ui.toggleTela.checked && wakeLock === null) {
                     await requestWakeLock();
                 }
-                document.removeEventListener('click', initWake); // Remove o listener após o primeiro clique bem-sucedido
+                document.removeEventListener('click', initWake); 
             }, { once: true });
         }
 
-        // Listener do Switch On/Off
         addEv(ui.toggleTela, 'change', async () => {
             salvarMemoriaSegura('prefManterTela', ui.toggleTela.checked);
             if (ui.toggleTela.checked) {
@@ -305,18 +299,14 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
-        // O celular desliga o Wake Lock automaticamente ao minimizar.
-        // Essa função religa a tela quando você abre o aplicativo de novo!
         document.addEventListener('visibilitychange', async () => {
             if (wakeLock !== null && document.visibilityState === 'visible' && ui.toggleTela.checked) {
                 await requestWakeLock();
             }
         });
     } else {
-        // Se o navegador do celular não suportar a tecnologia (iOS muito antigo), a chave some para não confundir
         ui.containerWakelock.style.display = 'none';
     }
-    // --------------------------------------------------------
 
     let tarefasNaMemoria = []; 
     let horarioDeInicio = "11:00";
