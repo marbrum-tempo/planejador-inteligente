@@ -26,14 +26,13 @@
             border-radius: 5px; font-size: 16px; box-sizing: border-box; font-family: inherit;
         }
         
-        /* MODIFICAÇÃO: Caixa de Entrada com Maior Altura e Destaque Visual */
         textarea { 
             resize: vertical; 
-            min-height: 160px; /* Expandido para maior visibilidade do bloco de texto */
+            min-height: 160px; 
             margin-bottom: 10px; 
-            border: 2px solid #b3d4ff; /* Borda reforçada em azul claro para destaque inicial */
-            background-color: #fafbfc; /* Fundo diferenciado para atrair o foco */
-            box-shadow: inset 0 2px 4px rgba(0, 82, 204, 0.05); /* Sombra interna sutil */
+            border: 2px solid #b3d4ff; 
+            background-color: #fafbfc; 
+            box-shadow: inset 0 2px 4px rgba(0, 82, 204, 0.05); 
         }
         textarea:focus {
             border-color: var(--primary-color);
@@ -132,12 +131,6 @@
         .concluidas-lista li span.tempo-ok { font-weight: bold; }
         .concluidas-resumo { font-weight: bold; color: #006644; font-size: 15px; text-align: right; padding-top: 5px; border-top: 2px solid #abf5d1; margin-top: 5px; }
         .btn-limpar-concluidas { background: none; border: none; color: #006644; font-size: 11px; cursor: pointer; text-decoration: underline; padding: 0; width: 100%; text-align: center; margin-top: 10px; opacity: 0.7; }
-
-        .db-section { margin-top: 20px; padding-top: 15px; border-top: 2px dashed var(--border-color); }
-        .db-title { font-size: 16px; margin-top: 0; margin-bottom: 5px; color: #42526e; }
-        .db-subtitle { font-size: 12px; color: #6b778c; margin-bottom: 10px; margin-top: 0; }
-        .db-inputs { display: flex; gap: 8px; margin-bottom: 10px; }
-        .db-inputs input { margin-bottom: 0; }
     </style>
 </head>
 <body>
@@ -198,16 +191,6 @@
         <div id="resumo-concluidas" class="concluidas-resumo">Total: 0h 0m</div>
         <button id="btn-limpar-concluidas" class="btn-limpar-concluidas">Limpar histórico do dia</button>
     </div>
-
-    <div class="db-section">
-        <h3 class="db-title">⚙️ Adicionar Novo Tempo Fixo</h3>
-        <p class="db-subtitle">O app aprende sozinho, mas se quiser adicionar um tempo específico, digite aqui.</p>
-        <div class="db-inputs">
-            <input type="text" id="nova-palavra" placeholder="Ex: limpar teclado" style="flex: 2;">
-            <input type="number" id="novo-tempo" placeholder="Min" style="flex: 1;">
-        </div>
-        <button id="btn-salvar-tempo" class="btn-calcular btn-full" style="background-color: #42526e; margin-bottom: 0;">💾 Salvar Fixo no Banco</button>
-    </div>
 </div>
 
 <script>
@@ -244,9 +227,6 @@ document.addEventListener("DOMContentLoaded", () => {
         btnSalvarRotina: document.getElementById('btn-salvar-rotina'),
         btnNovaCategoria: document.getElementById('btn-nova-categoria'),
         btnCalcular: document.getElementById('btn-calcular'),
-        novaPalavra: document.getElementById('nova-palavra'),
-        novoTempo: document.getElementById('novo-tempo'),
-        btnSalvarTempo: document.getElementById('btn-salvar-tempo'),
         painelConcluidas: document.getElementById('painel-concluidas'),
         listaConcluidas: document.getElementById('lista-concluidas'),
         resumoConcluidas: document.getElementById('resumo-concluidas'),
@@ -540,18 +520,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if(ui.btnVoz) { ui.btnVoz.disabled = true; ui.btnVoz.textContent = "Voz não suportada"; }
     }
 
-    addEv(ui.btnSalvarTempo, 'click', () => {
-        if(!ui.novaPalavra || !ui.novoTempo) return;
-        const palavra = ui.novaPalavra.value.toLowerCase().trim();
-        const tempo = parseInt(ui.novoTempo.value);
-        if (!palavra || isNaN(tempo) || tempo <= 0) { alert("Dados inválidos."); return; }
-
-        bancoDeTempos[palavra] = { historico: [tempo, tempo, tempo], media: tempo };
-        salvarMemoriaSegura('meuBancoInteligente', bancoDeTempos);
-        alert(`✅ Salvo! "${palavra}" passará a ter média de ${tempo} min.`);
-        ui.novaPalavra.value = ''; ui.novoTempo.value = '';
-    });
-
     addEv(ui.btnCalcular, 'click', () => {
         if(!ui.horaInicio || !ui.txtEntrada) return;
         horarioDeInicio = ui.horaInicio.value;
@@ -739,12 +707,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     addEv(ui.btnConcluir, 'click', () => {
         if (indexTarefaAtiva > -1) {
-            let minutosReais = Math.max(1, Math.round(tempoTotalGastoSegundos / 60));
+            let minutesReais = Math.max(1, Math.round(tempoTotalGastoSegundos / 60));
             let tarefaAtual = tarefasNaMemoria[indexTarefaAtiva];
             let chaveDB = tarefaAtual.dbKey;
             
             if (bancoDeTempos[chaveDB]) {
-                bancoDeTempos[chaveDB].historico.push(minutosReais);
+                bancoDeTempos[chaveDB].historico.push(minutesReais);
                 if (bancoDeTempos[chaveDB].historico.length > 5) bancoDeTempos[chaveDB].historico.shift();
                 
                 let soma = 0; bancoDeTempos[chaveDB].historico.forEach(val => soma += val);
@@ -753,7 +721,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 salvarMemoriaSegura('meuBancoInteligente', bancoDeTempos);
             }
 
-            logDiario.tarefas.push({ nome: tarefaAtual.name, tempo: minutosReais });
+            logDiario.tarefas.push({ nome: tarefaAtual.name, tempo: minutesReais });
             salvarMemoriaSegura('logDiarioConcluidas', logDiario);
             renderizarConcluidas();
 
