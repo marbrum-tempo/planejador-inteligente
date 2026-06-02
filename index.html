@@ -162,7 +162,7 @@
         <label>Tarefas a Fazer:</label>
         <button id="btn-limpar-texto" class="btn-limpar">🗑️ Apagar tudo</button>
     </div>
-    <textarea id="txt-entrada" placeholder="Fale ou digite as tarefas com o tempo e separadas por vírgula (Ex: varrer o chão 6, arrumar a cama 5, lavar louças 15). Depois aperte o botão azul abaixo"></textarea>
+    <textarea id="txt-entrada" placeholder="Fale ou digite as tarefas com o tempo (Ex: 'varrer o chão 6, arrumar a cama 5')"></textarea>
 
     <button id="btn-voz" class="btn-voz btn-full">🎤 Falar Tarefa</button>
 
@@ -712,7 +712,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const text = ui.txtEntrada.value.toLowerCase();
         if (!text.trim()) { alert("Digite alguma tarefa primeiro."); return; }
 
-        let rawTasks = text.split(/,\s*|\s+e\s+|\s+depois\s+|\s+em seguida\s+/i);
+        // --- ALTERAÇÃO: DIVISÃO APENAS POR VÍRGULAS ---
+        let rawTasks = text.split(/,\s*/);
+        
         tarefasNaMemoria = []; 
         let atualizouBiblioteca = false; 
         tarefasConcluidasHoje = false; 
