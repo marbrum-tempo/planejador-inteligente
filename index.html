@@ -16,7 +16,6 @@
         h1 { font-size: 20px; margin-top: 0; margin-bottom: 15px; text-align: center; }
         label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; }
         
-        /* CHAVE LIGA/DESLIGA DA TELA */
         .switch-container { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; background: #eafbee; padding: 10px 12px; border-radius: 8px; border: 1px solid #abf5d1; }
         .switch-label { font-size: 14px; font-weight: 600; color: #006644; margin: 0; display: flex; align-items: center; gap: 5px; }
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; flex: none; }
@@ -91,11 +90,26 @@
         }
         .btn-del-chip:hover { opacity: 1; color: white; background-color: #de350b; }
 
-        .rotinas-section { background-color: #f9fafc; border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; margin-bottom: 15px; }
-        .rotinas-header { font-size: 14px; font-weight: 600; margin-bottom: 10px; color: #42526e; }
-        .rotina-salvar-box { display: flex; gap: 8px; margin-bottom: 10px; }
-        .btn-salvar-rotina { background-color: #00875a; color: white; padding: 10px; width: auto; flex: none; font-size: 14px;}
+        /* NOVOS ESTILOS DAS LISTAS SALVAS (RETRÁTIL E CATEGORIZADO) */
+        .rotinas-details {
+            background-color: #f9fafc; border: 1px solid var(--border-color);
+            padding: 12px; border-radius: 8px; margin-bottom: 15px; transition: all 0.3s;
+        }
+        .rotinas-summary {
+            font-size: 14px; font-weight: 600; color: #42526e; cursor: pointer; list-style: none; outline: none;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .rotinas-summary::-webkit-details-marker { display: none; }
+        .rotinas-summary::after { content: '▼'; font-size: 12px; }
+        details[open] .rotinas-summary::after { content: '▲'; }
+
+        .rotina-salvar-box { display: flex; gap: 8px; margin-top: 15px; margin-bottom: 10px; }
+        #select-cat-rotina { margin-bottom: 0; padding: 8px; font-size: 13px; flex: 1; }
+        #nome-rotina { margin-bottom: 0; padding: 8px; font-size: 13px; flex: 1.5; }
+        .btn-salvar-rotina { background-color: #00875a; color: white; padding: 8px 12px; width: auto; flex: none; font-size: 13px; border-radius: 5px; }
+        
         .rotinas-lista { display: flex; flex-direction: column; gap: 6px; }
+        .rotina-cat-header { font-size: 13px; font-weight: 700; color: #5e6c84; margin-top: 10px; margin-bottom: 5px; border-bottom: 1px solid #dfe1e6; padding-bottom: 3px; }
         .rotina-pill { background-color: white; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .btn-carregar-rotina { background: none; border: none; padding: 0; cursor: pointer; font-weight: 600; color: var(--primary-color); font-size: 14px; flex: 1; text-align: left; }
         .btn-del-rotina { background: none; border: none; padding: 4px 8px; cursor: pointer; color: #de350b; font-size: 12px; margin-left: 8px; opacity: 0.7; border-radius: 4px; flex: none; width: auto; }
@@ -106,6 +120,8 @@
         .timer-display { font-size: 46px; font-weight: bold; color: #006644; font-variant-numeric: tabular-nums; margin: 10px 0 5px 0; }
         .timer-fim-estimado { font-size: 18px; font-weight: 600; color: #00875a; margin-bottom: 15px; }
         .timer-buttons { display: flex; gap: 10px; }
+        .btn-pular { flex: 1; background-color: #0052cc; color: white; }
+        .btn-pular:hover { background-color: #0043a6; }
         .btn-pausar { flex: 1; background-color: #ff991f; color: white; }
         .btn-concluir { flex: 1; background-color: #36b37e; color: white; }
 
@@ -162,7 +178,7 @@
         <label>Tarefas a Fazer:</label>
         <button id="btn-limpar-texto" class="btn-limpar">🗑️ Apagar tudo</button>
     </div>
-    <textarea id="txt-entrada" placeholder="Fale ou digite as tarefas com o tempo (Ex: 'varrer o chão 6, arrumar a cama 5') e as tarefas serão calculadas com o tempo após apertar o botão azul"></textarea>
+    <textarea id="txt-entrada" placeholder="Fale ou digite as tarefas com o tempo (Ex: 'varrer o chão 6, arrumar a cama 5'). Depois aperte o botão azul e tudo será calculado automaticamente."></textarea>
 
     <button id="btn-voz" class="btn-voz btn-full">🎤 Falar Tarefa</button>
 
@@ -175,14 +191,23 @@
         <div id="container-historico" class="historico-lista"></div>
     </details>
 
-    <div class="rotinas-section">
-        <div class="rotinas-header">📂 Minhas Listas Salvas</div>
+    <!-- NOVA SEÇÃO: MINHAS LISTAS SALVAS RETRÁTIL E CATEGORIZADA -->
+    <details class="rotinas-details">
+        <summary class="rotinas-summary">📂 Minhas Listas Salvas</summary>
         <div class="rotina-salvar-box">
-            <input type="text" id="nome-rotina" placeholder="Nome (Ex: Fim de semana)" style="margin:0;">
+            <select id="select-cat-rotina">
+                <option value="Trabalho">Trabalho</option>
+                <option value="Casa">Casa</option>
+                <option value="Finanças">Finanças</option>
+                <option value="Cuidados Pessoais">Cuidados Pessoais</option>
+                <option value="Estudos">Estudos</option>
+                <option value="Geral">Geral</option>
+            </select>
+            <input type="text" id="nome-rotina" placeholder="Nome da Lista">
             <button id="btn-salvar-rotina" class="btn-salvar-rotina">Salvar</button>
         </div>
         <div id="container-rotinas" class="rotinas-lista"></div>
-    </div>
+    </details>
 
     <button id="btn-calcular" class="btn-calcular btn-full">Calcular Tempo das Tarefas</button>
 
@@ -198,6 +223,7 @@
         <div id="timer-relogio" class="timer-display">00:00</div>
         <div id="timer-fim-estimado" class="timer-fim-estimado">🎯 Término previsto: 00:00</div>
         <div class="timer-buttons">
+            <button id="btn-pular" class="btn-pular">⏭️ Pular</button>
             <button id="btn-pausar" class="btn-pausar">⏸️ Pausar</button>
             <button id="btn-concluir" class="btn-concluir">✅ Concluir</button>
         </div>
@@ -237,11 +263,13 @@ document.addEventListener("DOMContentLoaded", () => {
         selectCategoria: document.getElementById('select-categoria'),
         containerHistorico: document.getElementById('container-historico'),
         containerRotinas: document.getElementById('container-rotinas'),
+        selectCatRotina: document.getElementById('select-cat-rotina'), // NOVO SELETOR DE ROTINA
         resultadoDiv: document.getElementById('resultado'),
         resumoTopo: document.getElementById('resumo-topo'),
         acoesTabela: document.getElementById('acoes-tabela'), 
         btnLimparTabela: document.getElementById('btn-limpar-tabela'), 
         painelTimer: document.getElementById('painel-timer'),
+        btnPular: document.getElementById('btn-pular'), 
         btnPausar: document.getElementById('btn-pausar'),
         btnConcluir: document.getElementById('btn-concluir'),
         timerNome: document.getElementById('timer-nome'),
@@ -469,9 +497,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     salvarMemoriaSegura('meuBancoInteligente', bancoDeTempos);
 
-    let minhasRotinas = lerMemoriaSegura('minhasRotinasSalvas', {});
-    if (typeof minhasRotinas !== 'object' || Array.isArray(minhasRotinas)) minhasRotinas = {};
-
     const categoriasPadrao = {
         "Casa": [], "Trabalho": [], "Rua": [], "Família": [], 
         "Finanças": [], "Cuidados Pessoais": [], "Transporte": [], "Geral": []
@@ -486,6 +511,79 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         salvarMemoriaSegura('historicoCategorizado', historicoCategorizado);
     }
+
+    // --- NOVA LÓGICA: LISTAS SALVAS CATEGORIZADAS COM MIGRAÇÃO ---
+    let minhasRotinasCategorizadas = lerMemoriaSegura('minhasRotinasCategorizadas', null);
+    
+    if (!minhasRotinasCategorizadas) {
+        // Pega as antigas (listas do Trabalho) e migra para o novo formato
+        let rotinasAntigas = lerMemoriaSegura('minhasRotinasSalvas', {});
+        minhasRotinasCategorizadas = {
+            "Trabalho": {}, "Casa": {}, "Finanças": {}, "Cuidados Pessoais": {}, "Estudos": {}, "Geral": {}
+        };
+        if (typeof rotinasAntigas === 'object' && !Array.isArray(rotinasAntigas)) {
+            for (const [nome, texto] of Object.entries(rotinasAntigas)) {
+                minhasRotinasCategorizadas["Trabalho"][nome] = texto; // Migrando as 3 listas antigas para Trabalho
+            }
+        }
+        salvarMemoriaSegura('minhasRotinasCategorizadas', minhasRotinasCategorizadas);
+    }
+
+    function renderizarRotinas() {
+        if(!ui.containerRotinas) return;
+        ui.containerRotinas.innerHTML = ''; 
+        
+        for (const categoria in minhasRotinasCategorizadas) {
+            const rotinasDaCat = minhasRotinasCategorizadas[categoria];
+            if (Object.keys(rotinasDaCat).length === 0) continue; 
+            
+            const catHeader = document.createElement('div');
+            catHeader.className = 'rotina-cat-header';
+            catHeader.textContent = `📁 ${categoria}`;
+            ui.containerRotinas.appendChild(catHeader);
+
+            for (const [nomeRotina, textoRotina] of Object.entries(rotinasDaCat)) {
+                const pill = document.createElement('div'); pill.className = 'rotina-pill';
+                const btnCarregar = document.createElement('button');
+                btnCarregar.className = 'btn-carregar-rotina'; btnCarregar.textContent = `▶ ${nomeRotina}`;
+                btnCarregar.onclick = () => { 
+                    if(ui.txtEntrada && ui.btnCalcular) {
+                        ui.txtEntrada.value = textoRotina; 
+                        salvarMemoriaSegura('backupTextoEntrada', textoRotina);
+                        ui.btnCalcular.click(); 
+                    }
+                };
+                const btnDeletar = document.createElement('button');
+                btnDeletar.className = 'btn-del-rotina'; btnDeletar.textContent = '✖';
+                btnDeletar.onclick = () => {
+                    if(confirm(`Excluir a lista "${nomeRotina}" da categoria ${categoria}?`)) {
+                        delete minhasRotinasCategorizadas[categoria][nomeRotina]; 
+                        salvarMemoriaSegura('minhasRotinasCategorizadas', minhasRotinasCategorizadas); 
+                        renderizarRotinas();
+                    }
+                };
+                pill.appendChild(btnCarregar); pill.appendChild(btnDeletar); ui.containerRotinas.appendChild(pill);
+            }
+        }
+    }
+    
+    addEv(ui.btnSalvarRotina, 'click', () => {
+        if(!ui.nomeRotina || !ui.txtEntrada || !ui.selectCatRotina) return;
+        const nome = ui.nomeRotina.value.trim();
+        const textoAtual = ui.txtEntrada.value.trim();
+        const categoria = ui.selectCatRotina.value;
+        
+        if (!nome) { alert("Dê um nome para a sua lista antes de salvar!"); return; }
+        if (!textoAtual) { alert("A caixa de tarefas está vazia."); return; }
+        
+        if (!minhasRotinasCategorizadas[categoria]) minhasRotinasCategorizadas[categoria] = {};
+        minhasRotinasCategorizadas[categoria][nome] = textoAtual; 
+        
+        salvarMemoriaSegura('minhasRotinasCategorizadas', minhasRotinasCategorizadas);
+        ui.nomeRotina.value = ''; 
+        renderizarRotinas();
+    });
+    renderizarRotinas();
 
     function tocarSintetizadorVitoria() {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -594,42 +692,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     carregarSelectCategorias();
 
-    function renderizarRotinas() {
-        if(!ui.containerRotinas) return;
-        ui.containerRotinas.innerHTML = ''; 
-        for (const [nomeRotina, textoRotina] of Object.entries(minhasRotinas)) {
-            const pill = document.createElement('div'); pill.className = 'rotina-pill';
-            const btnCarregar = document.createElement('button');
-            btnCarregar.className = 'btn-carregar-rotina'; btnCarregar.textContent = `▶ ${nomeRotina}`;
-            btnCarregar.onclick = () => { 
-                if(ui.txtEntrada && ui.btnCalcular) {
-                    ui.txtEntrada.value = textoRotina; 
-                    salvarMemoriaSegura('backupTextoEntrada', textoRotina);
-                    ui.btnCalcular.click(); 
-                }
-            };
-            const btnDeletar = document.createElement('button');
-            btnDeletar.className = 'btn-del-rotina'; btnDeletar.textContent = '✖';
-            btnDeletar.onclick = () => {
-                if(confirm(`Excluir a lista "${nomeRotina}"?`)) {
-                    delete minhasRotinas[nomeRotina]; salvarMemoriaSegura('minhasRotinasSalvas', minhasRotinas); renderizarRotinas();
-                }
-            };
-            pill.appendChild(btnCarregar); pill.appendChild(btnDeletar); ui.containerRotinas.appendChild(pill);
-        }
-    }
-    
-    addEv(ui.btnSalvarRotina, 'click', () => {
-        if(!ui.nomeRotina || !ui.txtEntrada) return;
-        const nome = ui.nomeRotina.value.trim();
-        const textoAtual = ui.txtEntrada.value.trim();
-        if (!nome) { alert("Dê um nome para a sua lista antes de salvar!"); return; }
-        if (!textoAtual) { alert("A caixa de tarefas está vazia."); return; }
-        minhasRotinas[nome] = textoAtual; salvarMemoriaSegura('minhasRotinasSalvas', minhasRotinas);
-        ui.nomeRotina.value = ''; renderizarRotinas();
-    });
-    renderizarRotinas();
-
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let isRecording = false;
     let recognitionInstance = null;
@@ -712,7 +774,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const text = ui.txtEntrada.value.toLowerCase();
         if (!text.trim()) { alert("Digite alguma tarefa primeiro."); return; }
 
-        // --- ALTERAÇÃO: DIVISÃO APENAS POR VÍRGULAS ---
         let rawTasks = text.split(/,\s*/);
         
         tarefasNaMemoria = []; 
@@ -905,6 +966,28 @@ document.addEventListener("DOMContentLoaded", () => {
             clearInterval(timerInterval); 
             timerInterval = setInterval(tickTimer, 1000); 
             salvarEstadoTimer(); 
+        }
+    });
+
+    addEv(ui.btnPular, 'click', () => {
+        if (indexTarefaAtiva > -1) {
+            const agora = new Date();
+            const hh = String(agora.getHours()).padStart(2, '0');
+            const mm = String(agora.getMinutes()).padStart(2, '0');
+            if(ui.horaInicio) ui.horaInicio.value = `${hh}:${mm}`;
+            horarioDeInicio = `${hh}:${mm}`;
+
+            let idx = indexTarefaAtiva;
+            pararCronometroTotalmente();
+            
+            tarefasNaMemoria.splice(idx, 1); 
+            
+            if (tarefasNaMemoria.length > 0) {
+                let proximoIdx = (idx < tarefasNaMemoria.length) ? idx : 0;
+                iniciarTarefa(proximoIdx);
+            } else {
+                desenharTabela(); 
+            }
         }
     });
 
