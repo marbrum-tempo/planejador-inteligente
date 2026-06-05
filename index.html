@@ -90,7 +90,6 @@
         }
         .btn-del-chip:hover { opacity: 1; color: white; background-color: #de350b; }
 
-        /* NOVOS ESTILOS DAS LISTAS SALVAS (RETRÁTIL E CATEGORIZADO) */
         .rotinas-details {
             background-color: #f9fafc; border: 1px solid var(--border-color);
             padding: 12px; border-radius: 8px; margin-bottom: 15px; transition: all 0.3s;
@@ -103,13 +102,12 @@
         .rotinas-summary::after { content: '▼'; font-size: 12px; }
         details[open] .rotinas-summary::after { content: '▲'; }
 
-        .rotina-salvar-box { display: flex; gap: 8px; margin-top: 15px; margin-bottom: 10px; }
-        #select-cat-rotina { margin-bottom: 0; padding: 8px; font-size: 13px; flex: 1; }
-        #nome-rotina { margin-bottom: 0; padding: 8px; font-size: 13px; flex: 1.5; }
+        .rotina-salvar-box { display: flex; gap: 8px; margin-bottom: 10px; }
+        #select-cat-rotina { margin-bottom: 0; padding: 8px; font-size: 14px; flex: 1; }
+        #nome-rotina { margin-bottom: 0; padding: 8px; font-size: 14px; flex: 1; }
         .btn-salvar-rotina { background-color: #00875a; color: white; padding: 8px 12px; width: auto; flex: none; font-size: 13px; border-radius: 5px; }
         
         .rotinas-lista { display: flex; flex-direction: column; gap: 6px; }
-        .rotina-cat-header { font-size: 13px; font-weight: 700; color: #5e6c84; margin-top: 10px; margin-bottom: 5px; border-bottom: 1px solid #dfe1e6; padding-bottom: 3px; }
         .rotina-pill { background-color: white; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .btn-carregar-rotina { background: none; border: none; padding: 0; cursor: pointer; font-weight: 600; color: var(--primary-color); font-size: 14px; flex: 1; text-align: left; }
         .btn-del-rotina { background: none; border: none; padding: 4px 8px; cursor: pointer; color: #de350b; font-size: 12px; margin-left: 8px; opacity: 0.7; border-radius: 4px; flex: none; width: auto; }
@@ -178,7 +176,7 @@
         <label>Tarefas a Fazer:</label>
         <button id="btn-limpar-texto" class="btn-limpar">🗑️ Apagar tudo</button>
     </div>
-    <textarea id="txt-entrada" placeholder="Fale ou digite as tarefas com o tempo (Ex: 'varrer o chão 6, arrumar a cama 5'). Depois aperte o botão azul e tudo será calculado automaticamente."></textarea>
+    <textarea id="txt-entrada" placeholder="Fale ou digite as tarefas com o tempo (Ex: 'varrer o chão 6, arrumar a cama 5'). Depois aperte o botão azul para calcular o tempo de cada tarefa."></textarea>
 
     <button id="btn-voz" class="btn-voz btn-full">🎤 Falar Tarefa</button>
 
@@ -186,25 +184,20 @@
         <summary class="biblioteca-summary">⚡ Biblioteca de Tarefas</summary>
         <div class="biblioteca-controls">
             <select id="select-categoria"></select>
-            <button id="btn-nova-categoria" class="btn-nova-cat" title="Criar nova lista">➕ Nova Lista</button>
+            <button id="btn-nova-categoria" class="btn-nova-cat" title="Criar nova categoria">➕ Nova Categoria</button>
         </div>
         <div id="container-historico" class="historico-lista"></div>
     </details>
 
-    <!-- NOVA SEÇÃO: MINHAS LISTAS SALVAS RETRÁTIL E CATEGORIZADA -->
     <details class="rotinas-details">
         <summary class="rotinas-summary">📂 Minhas Listas Salvas</summary>
+        <div class="biblioteca-controls">
+            <select id="select-cat-rotina"></select>
+            <button id="btn-nova-cat-rotina" class="btn-nova-cat" title="Criar nova categoria">➕ Nova Categoria</button>
+        </div>
         <div class="rotina-salvar-box">
-            <select id="select-cat-rotina">
-                <option value="Trabalho">Trabalho</option>
-                <option value="Casa">Casa</option>
-                <option value="Finanças">Finanças</option>
-                <option value="Cuidados Pessoais">Cuidados Pessoais</option>
-                <option value="Estudos">Estudos</option>
-                <option value="Geral">Geral</option>
-            </select>
             <input type="text" id="nome-rotina" placeholder="Nome da Lista">
-            <button id="btn-salvar-rotina" class="btn-salvar-rotina">Salvar</button>
+            <button id="btn-salvar-rotina" class="btn-salvar-rotina">💾 Salvar Lista</button>
         </div>
         <div id="container-rotinas" class="rotinas-lista"></div>
     </details>
@@ -260,10 +253,17 @@ document.addEventListener("DOMContentLoaded", () => {
         txtEntrada: document.getElementById('txt-entrada'),
         btnLimparTexto: document.getElementById('btn-limpar-texto'),
         horaInicio: document.getElementById('hora-inicio'),
+        
         selectCategoria: document.getElementById('select-categoria'),
+        btnNovaCategoria: document.getElementById('btn-nova-categoria'),
         containerHistorico: document.getElementById('container-historico'),
+        
+        selectCatRotina: document.getElementById('select-cat-rotina'),
+        btnNovaCatRotina: document.getElementById('btn-nova-cat-rotina'),
+        nomeRotina: document.getElementById('nome-rotina'),
+        btnSalvarRotina: document.getElementById('btn-salvar-rotina'),
         containerRotinas: document.getElementById('container-rotinas'),
-        selectCatRotina: document.getElementById('select-cat-rotina'), // NOVO SELETOR DE ROTINA
+        
         resultadoDiv: document.getElementById('resultado'),
         resumoTopo: document.getElementById('resumo-topo'),
         acoesTabela: document.getElementById('acoes-tabela'), 
@@ -275,9 +275,6 @@ document.addEventListener("DOMContentLoaded", () => {
         timerNome: document.getElementById('timer-nome'),
         timerRelogio: document.getElementById('timer-relogio'),
         timerFimEstimado: document.getElementById('timer-fim-estimado'),
-        nomeRotina: document.getElementById('nome-rotina'),
-        btnSalvarRotina: document.getElementById('btn-salvar-rotina'),
-        btnNovaCategoria: document.getElementById('btn-nova-categoria'),
         btnCalcular: document.getElementById('btn-calcular'),
         painelConcluidas: document.getElementById('painel-concluidas'),
         listaConcluidas: document.getElementById('lista-concluidas'),
@@ -497,124 +494,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     salvarMemoriaSegura('meuBancoInteligente', bancoDeTempos);
 
-    const categoriasPadrao = {
-        "Casa": [], "Trabalho": [], "Rua": [], "Família": [], 
-        "Finanças": [], "Cuidados Pessoais": [], "Transporte": [], "Geral": []
-    };
-    
+    // SISTEMA DA BIBLIOTECA
+    const categoriasPadraoBib = { "Casa": [], "Trabalho": [], "Rua": [], "Família": [], "Finanças": [], "Cuidados Pessoais": [], "Transporte": [], "Geral": [] };
     let historicoCategorizado = lerMemoriaSegura('historicoCategorizado', null);
+    
     if (!historicoCategorizado || Array.isArray(historicoCategorizado)) {
-        historicoCategorizado = categoriasPadrao;
+        historicoCategorizado = categoriasPadraoBib;
         let historicoVelho = lerMemoriaSegura('historicoTarefasRecentes', []);
         if (Array.isArray(historicoVelho) && historicoVelho.length > 0) {
             historicoCategorizado["Geral"] = historicoVelho; 
         }
         salvarMemoriaSegura('historicoCategorizado', historicoCategorizado);
-    }
-
-    // --- NOVA LÓGICA: LISTAS SALVAS CATEGORIZADAS COM MIGRAÇÃO ---
-    let minhasRotinasCategorizadas = lerMemoriaSegura('minhasRotinasCategorizadas', null);
-    
-    if (!minhasRotinasCategorizadas) {
-        // Pega as antigas (listas do Trabalho) e migra para o novo formato
-        let rotinasAntigas = lerMemoriaSegura('minhasRotinasSalvas', {});
-        minhasRotinasCategorizadas = {
-            "Trabalho": {}, "Casa": {}, "Finanças": {}, "Cuidados Pessoais": {}, "Estudos": {}, "Geral": {}
-        };
-        if (typeof rotinasAntigas === 'object' && !Array.isArray(rotinasAntigas)) {
-            for (const [nome, texto] of Object.entries(rotinasAntigas)) {
-                minhasRotinasCategorizadas["Trabalho"][nome] = texto; // Migrando as 3 listas antigas para Trabalho
-            }
-        }
-        salvarMemoriaSegura('minhasRotinasCategorizadas', minhasRotinasCategorizadas);
-    }
-
-    function renderizarRotinas() {
-        if(!ui.containerRotinas) return;
-        ui.containerRotinas.innerHTML = ''; 
-        
-        for (const categoria in minhasRotinasCategorizadas) {
-            const rotinasDaCat = minhasRotinasCategorizadas[categoria];
-            if (Object.keys(rotinasDaCat).length === 0) continue; 
-            
-            const catHeader = document.createElement('div');
-            catHeader.className = 'rotina-cat-header';
-            catHeader.textContent = `📁 ${categoria}`;
-            ui.containerRotinas.appendChild(catHeader);
-
-            for (const [nomeRotina, textoRotina] of Object.entries(rotinasDaCat)) {
-                const pill = document.createElement('div'); pill.className = 'rotina-pill';
-                const btnCarregar = document.createElement('button');
-                btnCarregar.className = 'btn-carregar-rotina'; btnCarregar.textContent = `▶ ${nomeRotina}`;
-                btnCarregar.onclick = () => { 
-                    if(ui.txtEntrada && ui.btnCalcular) {
-                        ui.txtEntrada.value = textoRotina; 
-                        salvarMemoriaSegura('backupTextoEntrada', textoRotina);
-                        ui.btnCalcular.click(); 
-                    }
-                };
-                const btnDeletar = document.createElement('button');
-                btnDeletar.className = 'btn-del-rotina'; btnDeletar.textContent = '✖';
-                btnDeletar.onclick = () => {
-                    if(confirm(`Excluir a lista "${nomeRotina}" da categoria ${categoria}?`)) {
-                        delete minhasRotinasCategorizadas[categoria][nomeRotina]; 
-                        salvarMemoriaSegura('minhasRotinasCategorizadas', minhasRotinasCategorizadas); 
-                        renderizarRotinas();
-                    }
-                };
-                pill.appendChild(btnCarregar); pill.appendChild(btnDeletar); ui.containerRotinas.appendChild(pill);
-            }
-        }
-    }
-    
-    addEv(ui.btnSalvarRotina, 'click', () => {
-        if(!ui.nomeRotina || !ui.txtEntrada || !ui.selectCatRotina) return;
-        const nome = ui.nomeRotina.value.trim();
-        const textoAtual = ui.txtEntrada.value.trim();
-        const categoria = ui.selectCatRotina.value;
-        
-        if (!nome) { alert("Dê um nome para a sua lista antes de salvar!"); return; }
-        if (!textoAtual) { alert("A caixa de tarefas está vazia."); return; }
-        
-        if (!minhasRotinasCategorizadas[categoria]) minhasRotinasCategorizadas[categoria] = {};
-        minhasRotinasCategorizadas[categoria][nome] = textoAtual; 
-        
-        salvarMemoriaSegura('minhasRotinasCategorizadas', minhasRotinasCategorizadas);
-        ui.nomeRotina.value = ''; 
-        renderizarRotinas();
-    });
-    renderizarRotinas();
-
-    function tocarSintetizadorVitoria() {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return; 
-        
-        const ctx = new AudioContext();
-        const melodia = [
-            { f: 659.25, d: 0.4,  t: 0.0 }, { f: 523.25, d: 0.15, t: 0.45 }, { f: 392.00, d: 0.15, t: 0.65 },
-            { f: 523.25, d: 0.15, t: 0.85 }, { f: 659.25, d: 0.15, t: 1.05 }, { f: 783.99, d: 0.6,  t: 1.25 },
-            { f: 698.46, d: 0.15, t: 1.95 }, { f: 659.25, d: 0.15, t: 2.15 }, { f: 587.33, d: 0.15, t: 2.35 },
-            { f: 523.25, d: 0.15, t: 2.55 }, { f: 587.33, d: 0.8,  t: 2.75 } 
-        ];
-
-        melodia.forEach(nota => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            
-            osc.type = 'square'; 
-            osc.frequency.value = nota.f;
-            
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            
-            gain.gain.setValueAtTime(0, ctx.currentTime + nota.t);
-            gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + nota.t + 0.05);
-            gain.gain.setValueAtTime(0.15, ctx.currentTime + nota.t + nota.d - 0.05);
-            gain.gain.linearRampToValueAtTime(0, ctx.currentTime + nota.t + nota.d);
-            
-            osc.start(ctx.currentTime + nota.t);
-            osc.stop(ctx.currentTime + nota.t + nota.d);
-        });
     }
 
     function carregarSelectCategorias(selecionarAtiva = null) {
@@ -641,7 +531,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const tarefas = historicoCategorizado[catAtual] || [];
 
         if (tarefas.length === 0) {
-            ui.containerHistorico.innerHTML = '<span style="font-size:13px; color:#6b778c;">Nenhuma tarefa nesta lista. Digite e calcule para adicionar!</span>';
+            ui.containerHistorico.innerHTML = '<span style="font-size:13px; color:#6b778c;">Nenhuma tarefa nesta categoria. Digite e calcule para adicionar!</span>';
             return;
         }
 
@@ -676,7 +566,7 @@ document.addEventListener("DOMContentLoaded", () => {
     addEv(ui.selectCategoria, 'change', renderizarChipsDaCategoria);
 
     addEv(ui.btnNovaCategoria, 'click', () => {
-        let novaCat = prompt("Digite o nome da nova lista (Ex: Compras, Estudos):");
+        let novaCat = prompt("Digite o nome da nova categoria para Tarefas Soltas (Ex: Projetos, Hobbies):");
         if(novaCat) {
             novaCat = novaCat.trim();
             if(novaCat && !historicoCategorizado[novaCat]) {
@@ -691,6 +581,144 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     carregarSelectCategorias();
+
+    // --- NOVO SISTEMA DE LISTAS SALVAS (ROTINAS) CATEGORIZADO E FILTRADO ---
+    let minhasRotinasCategorizadas = lerMemoriaSegura('minhasRotinasCategorizadas', null);
+    
+    if (!minhasRotinasCategorizadas) {
+        let rotinasAntigas = lerMemoriaSegura('minhasRotinasSalvas', {});
+        minhasRotinasCategorizadas = { "Trabalho": {}, "Casa": {}, "Finanças": {}, "Cuidados Pessoais": {}, "Estudos": {}, "Geral": {} };
+        if (typeof rotinasAntigas === 'object' && !Array.isArray(rotinasAntigas)) {
+            for (const [nome, texto] of Object.entries(rotinasAntigas)) {
+                minhasRotinasCategorizadas["Trabalho"][nome] = texto; 
+            }
+        }
+        salvarMemoriaSegura('minhasRotinasCategorizadas', minhasRotinasCategorizadas);
+    }
+
+    function carregarSelectCatRotina(selecionarAtiva = null) {
+        if (!ui.selectCatRotina) return;
+        ui.selectCatRotina.innerHTML = '';
+        const categorias = Object.keys(minhasRotinasCategorizadas);
+        
+        categorias.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat; option.textContent = cat;
+            ui.selectCatRotina.appendChild(option);
+        });
+
+        if (selecionarAtiva && categorias.includes(selecionarAtiva)) ui.selectCatRotina.value = selecionarAtiva;
+        else if (categorias.includes("Trabalho")) ui.selectCatRotina.value = "Trabalho";
+        
+        renderizarRotinas();
+    }
+
+    function renderizarRotinas() {
+        if(!ui.containerRotinas || !ui.selectCatRotina) return;
+        ui.containerRotinas.innerHTML = ''; 
+        
+        const catAtual = ui.selectCatRotina.value;
+        if (!catAtual) return;
+
+        const rotinasDaCat = minhasRotinasCategorizadas[catAtual] || {};
+
+        if (Object.keys(rotinasDaCat).length === 0) {
+            ui.containerRotinas.innerHTML = '<span style="font-size:13px; color:#6b778c;">Nenhuma lista salva nesta categoria.</span>';
+            return;
+        }
+
+        for (const [nomeRotina, textoRotina] of Object.entries(rotinasDaCat)) {
+            const pill = document.createElement('div'); pill.className = 'rotina-pill';
+            const btnCarregar = document.createElement('button');
+            btnCarregar.className = 'btn-carregar-rotina'; btnCarregar.textContent = `▶ ${nomeRotina}`;
+            btnCarregar.onclick = () => { 
+                if(ui.txtEntrada && ui.btnCalcular) {
+                    ui.txtEntrada.value = textoRotina; 
+                    salvarMemoriaSegura('backupTextoEntrada', textoRotina);
+                    ui.btnCalcular.click(); 
+                }
+            };
+            const btnDeletar = document.createElement('button');
+            btnDeletar.className = 'btn-del-rotina'; btnDeletar.textContent = '✖';
+            btnDeletar.onclick = () => {
+                if(confirm(`Excluir a lista "${nomeRotina}" da categoria ${catAtual}?`)) {
+                    delete minhasRotinasCategorizadas[catAtual][nomeRotina]; 
+                    salvarMemoriaSegura('minhasRotinasCategorizadas', minhasRotinasCategorizadas); 
+                    renderizarRotinas();
+                }
+            };
+            pill.appendChild(btnCarregar); pill.appendChild(btnDeletar); ui.containerRotinas.appendChild(pill);
+        }
+    }
+    
+    addEv(ui.selectCatRotina, 'change', renderizarRotinas);
+
+    addEv(ui.btnNovaCatRotina, 'click', () => {
+        let novaCat = prompt("Digite o nome da nova categoria para suas Listas (Ex: Cardápios, Rotina Diária):");
+        if(novaCat) {
+            novaCat = novaCat.trim();
+            if(novaCat && !minhasRotinasCategorizadas[novaCat]) {
+                minhasRotinasCategorizadas[novaCat] = {};
+                salvarMemoriaSegura('minhasRotinasCategorizadas', minhasRotinasCategorizadas);
+                carregarSelectCatRotina(novaCat);
+            } else if (minhasRotinasCategorizadas[novaCat]) {
+                if(ui.selectCatRotina) ui.selectCatRotina.value = novaCat; 
+                renderizarRotinas();
+            }
+        }
+    });
+
+    addEv(ui.btnSalvarRotina, 'click', () => {
+        if(!ui.nomeRotina || !ui.txtEntrada || !ui.selectCatRotina) return;
+        const nome = ui.nomeRotina.value.trim();
+        const textoAtual = ui.txtEntrada.value.trim();
+        const categoria = ui.selectCatRotina.value;
+        
+        if (!nome) { alert("Dê um nome para a sua lista antes de salvar!"); return; }
+        if (!textoAtual) { alert("A caixa de tarefas está vazia."); return; }
+        
+        if (!minhasRotinasCategorizadas[categoria]) minhasRotinasCategorizadas[categoria] = {};
+        minhasRotinasCategorizadas[categoria][nome] = textoAtual; 
+        
+        salvarMemoriaSegura('minhasRotinasCategorizadas', minhasRotinasCategorizadas);
+        ui.nomeRotina.value = ''; 
+        renderizarRotinas();
+    });
+
+    carregarSelectCatRotina();
+    // --------------------------------------------------------------------------
+
+    function tocarSintetizadorVitoria() {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return; 
+        
+        const ctx = new AudioContext();
+        const melodia = [
+            { f: 659.25, d: 0.4,  t: 0.0 }, { f: 523.25, d: 0.15, t: 0.45 }, { f: 392.00, d: 0.15, t: 0.65 },
+            { f: 523.25, d: 0.15, t: 0.85 }, { f: 659.25, d: 0.15, t: 1.05 }, { f: 783.99, d: 0.6,  t: 1.25 },
+            { f: 698.46, d: 0.15, t: 1.95 }, { f: 659.25, d: 0.15, t: 2.15 }, { f: 587.33, d: 0.15, t: 2.35 },
+            { f: 523.25, d: 0.15, t: 2.55 }, { f: 587.33, d: 0.8,  t: 2.75 } 
+        ];
+
+        melodia.forEach(nota => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            osc.type = 'square'; 
+            osc.frequency.value = nota.f;
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            gain.gain.setValueAtTime(0, ctx.currentTime + nota.t);
+            gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + nota.t + 0.05);
+            gain.gain.setValueAtTime(0.15, ctx.currentTime + nota.t + nota.d - 0.05);
+            gain.gain.linearRampToValueAtTime(0, ctx.currentTime + nota.t + nota.d);
+            
+            osc.start(ctx.currentTime + nota.t);
+            osc.stop(ctx.currentTime + nota.t + nota.d);
+        });
+    }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let isRecording = false;
