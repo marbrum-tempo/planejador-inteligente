@@ -174,9 +174,12 @@
 
     <div class="label-row">
         <label>Tarefas a Fazer:</label>
-        <button id="btn-limpar-texto" class="btn-limpar">🗑️ Apagar tudo</button>
+        <div style="display: flex; gap: 15px;">
+            <button id="btn-remover-tempos" class="btn-limpar" style="color: #0052cc;" title="Apaga os números para usar a inteligência do app">🪄 Tirar Tempos</button>
+            <button id="btn-limpar-texto" class="btn-limpar">🗑️ Apagar tudo</button>
+        </div>
     </div>
-    <textarea id="txt-entrada" placeholder="Fale ou digite as tarefas com o tempo (Ex: 'varrer o chão 6, arrumar a cama 5'). Depois aperte o botão azul para calcular o tempo de cada tarefa."></textarea>
+    <textarea id="txt-entrada" placeholder="Fale ou digite as tarefas com o tempo (Ex: 'varrer o chão 6, arrumar a cama 5')"></textarea>
 
     <button id="btn-voz" class="btn-voz btn-full">🎤 Falar Tarefa</button>
 
@@ -252,6 +255,7 @@ document.addEventListener("DOMContentLoaded", () => {
         btnVoz: document.getElementById('btn-voz'),
         txtEntrada: document.getElementById('txt-entrada'),
         btnLimparTexto: document.getElementById('btn-limpar-texto'),
+        btnRemoverTempos: document.getElementById('btn-remover-tempos'), 
         horaInicio: document.getElementById('hora-inicio'),
         
         selectCategoria: document.getElementById('select-categoria'),
@@ -419,6 +423,17 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    addEv(ui.btnRemoverTempos, 'click', () => {
+        if (ui.txtEntrada && ui.txtEntrada.value.trim() !== '') {
+            let text = ui.txtEntrada.value;
+            let tasks = text.split(/,\s*/);
+            let cleanedTasks = tasks.map(task => task.replace(/\s+\d+$/, '').trim());
+            cleanedTasks = cleanedTasks.filter(t => t.length > 0);
+            ui.txtEntrada.value = cleanedTasks.join(', ');
+            salvarMemoriaSegura('backupTextoEntrada', ui.txtEntrada.value);
+        }
+    });
+
     addEv(ui.btnLimparTabela, 'click', () => {
         if(confirm("Tem certeza que deseja cancelar e apagar todas as tarefas desta lista ativa?")) {
             pararCronometroTotalmente();
@@ -462,14 +477,6 @@ document.addEventListener("DOMContentLoaded", () => {
         ui.painelConcluidas.style.display = 'block';
     }
 
-    addEv(ui.btnLimparConcluidas, 'click', () => {
-        if(confirm("Deseja apagar o histórico de tarefas realizadas hoje?")) {
-            logDiario.tarefas = [];
-            salvarMemoriaSegura('logDiarioConcluidas', logDiario);
-            renderizarConcluidas();
-        }
-    });
-
     renderizarConcluidas(); 
 
     const bancoPadraoNumeros = {
@@ -494,12 +501,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     salvarMemoriaSegura('meuBancoInteligente', bancoDeTempos);
 
-    // SISTEMA DA BIBLIOTECA
-    const categoriasPadraoBib = { "Casa": [], "Trabalho": [], "Rua": [], "Família": [], "Finanças": [], "Cuidados Pessoais": [], "Transporte": [], "Geral": [] };
+    const categoriasPadrao = { "Casa": [], "Trabalho": [], "Rua": [], "Família": [], "Finanças": [], "Cuidados Pessoais": [], "Transporte": [], "Geral": [] };
     let historicoCategorizado = lerMemoriaSegura('historicoCategorizado', null);
-    
     if (!historicoCategorizado || Array.isArray(historicoCategorizado)) {
-        historicoCategorizado = categoriasPadraoBib;
+        historicoCategorizado = categoriasPadrao;
         let historicoVelho = lerMemoriaSegura('historicoTarefasRecentes', []);
         if (Array.isArray(historicoVelho) && historicoVelho.length > 0) {
             historicoCategorizado["Geral"] = historicoVelho; 
@@ -582,7 +587,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     carregarSelectCategorias();
 
-    // --- NOVO SISTEMA DE LISTAS SALVAS (ROTINAS) CATEGORIZADO E FILTRADO ---
     let minhasRotinasCategorizadas = lerMemoriaSegura('minhasRotinasCategorizadas', null);
     
     if (!minhasRotinasCategorizadas) {
@@ -631,13 +635,22 @@ document.addEventListener("DOMContentLoaded", () => {
             const pill = document.createElement('div'); pill.className = 'rotina-pill';
             const btnCarregar = document.createElement('button');
             btnCarregar.className = 'btn-carregar-rotina'; btnCarregar.textContent = `▶ ${nomeRotina}`;
+            
+            // --- CORREÇÃO: EMPILHAMENTO DE LISTAS E CARREGAMENTO PASSIVO ---
             btnCarregar.onclick = () => { 
-                if(ui.txtEntrada && ui.btnCalcular) {
-                    ui.txtEntrada.value = textoRotina; 
-                    salvarMemoriaSegura('backupTextoEntrada', textoRotina);
-                    ui.btnCalcular.click(); 
+                if(ui.txtEntrada) {
+                    let atual = ui.txtEntrada.value.trim();
+                    if (atual === '') {
+                        ui.txtEntrada.value = textoRotina;
+                    } else if (atual.endsWith(',')) {
+                        ui.txtEntrada.value = atual + ' ' + textoRotina;
+                    } else {
+                        ui.txtEntrada.value = atual + ', ' + textoRotina;
+                    }
+                    salvarMemoriaSegura('backupTextoEntrada', ui.txtEntrada.value);
                 }
             };
+            
             const btnDeletar = document.createElement('button');
             btnDeletar.className = 'btn-del-rotina'; btnDeletar.textContent = '✖';
             btnDeletar.onclick = () => {
@@ -686,7 +699,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     carregarSelectCatRotina();
-    // --------------------------------------------------------------------------
 
     function tocarSintetizadorVitoria() {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -703,18 +715,14 @@ document.addEventListener("DOMContentLoaded", () => {
         melodia.forEach(nota => {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
-            
             osc.type = 'square'; 
             osc.frequency.value = nota.f;
-            
             osc.connect(gain);
             gain.connect(ctx.destination);
-            
             gain.gain.setValueAtTime(0, ctx.currentTime + nota.t);
             gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + nota.t + 0.05);
             gain.gain.setValueAtTime(0.15, ctx.currentTime + nota.t + nota.d - 0.05);
             gain.gain.linearRampToValueAtTime(0, ctx.currentTime + nota.t + nota.d);
-            
             osc.start(ctx.currentTime + nota.t);
             osc.stop(ctx.currentTime + nota.t + nota.d);
         });
@@ -789,10 +797,10 @@ document.addEventListener("DOMContentLoaded", () => {
         
         const agoraCalc = new Date();
         let [hc, mc] = ui.horaInicio.value.split(':').map(Number);
-        let minutosInput = hc * 60 + mc;
-        let minutosAgora = agoraCalc.getHours() * 60 + agoraCalc.getMinutes();
+        let minutesInput = hc * 60 + mc;
+        let minutesAgora = agoraCalc.getHours() * 60 + agoraCalc.getMinutes();
 
-        if (minutosInput <= minutosAgora) {
+        if (minutesInput <= minutesAgora) {
             const hh = String(agoraCalc.getHours()).padStart(2, '0');
             const mm = String(agoraCalc.getMinutes()).padStart(2, '0');
             ui.horaInicio.value = `${hh}:${mm}`;
@@ -803,7 +811,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!text.trim()) { alert("Digite alguma tarefa primeiro."); return; }
 
         let rawTasks = text.split(/,\s*/);
-        
         tarefasNaMemoria = []; 
         let atualizouBiblioteca = false; 
         tarefasConcluidasHoje = false; 
@@ -840,10 +847,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 taskDuration = explicitTime;
                 let autoChave = achouNoBanco ? dbKeyExata : cleanTask;
                 if (!bancoDeTempos[autoChave]) bancoDeTempos[autoChave] = { historico: [], media: explicitTime };
-                
                 bancoDeTempos[autoChave].historico.push(explicitTime);
                 if (bancoDeTempos[autoChave].historico.length > 5) bancoDeTempos[autoChave].historico.shift();
-                
                 let soma = 0; bancoDeTempos[autoChave].historico.forEach(val => soma += val);
                 bancoDeTempos[autoChave].media = Math.round(soma / bancoDeTempos[autoChave].historico.length);
             } 
@@ -866,7 +871,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 historicoCategorizado[categoriaAtiva].push(nomeFinal);
                 atualizouBiblioteca = true;
             }
-            
             tarefasNaMemoria.push({ name: nomeFinal, duration: taskDuration, dbKey: dbKeyExata });
         });
 
@@ -920,6 +924,7 @@ document.addEventListener("DOMContentLoaded", () => {
         atualizarRelogio();
         salvarEstadoTimer(); 
         timerInterval = setInterval(tickTimer, 1000);
+        desenharTabela();
     }
 
     function tickTimer() {
@@ -988,7 +993,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 horarioDeInicio = `${newH}:${newM}`;
                 if(ui.horaInicio) ui.horaInicio.value = horarioDeInicio;
-                
                 momentoPausa = null; desenharTabela(); 
             }
             clearInterval(timerInterval); 
@@ -997,6 +1001,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // --- SINCRO VISUAL COMPLETO DO BOTÃO PULAR ---
     addEv(ui.btnPular, 'click', () => {
         if (indexTarefaAtiva > -1) {
             const agora = new Date();
@@ -1007,8 +1012,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             let idx = indexTarefaAtiva;
             pararCronometroTotalmente();
-            
-            tarefasNaMemoria.splice(idx, 1); 
+            excluirTarefa(idx); 
             
             if (tarefasNaMemoria.length > 0) {
                 let proximoIdx = (idx < tarefasNaMemoria.length) ? idx : 0;
@@ -1028,7 +1032,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if (bancoDeTempos[chaveDB]) {
                 bancoDeTempos[chaveDB].historico.push(minutesReais);
                 if (bancoDeTempos[chaveDB].historico.length > 5) bancoDeTempos[chaveDB].historico.shift();
-                
                 let soma = 0; bancoDeTempos[chaveDB].historico.forEach(val => soma += val);
                 let novaMedia = Math.round(soma / bancoDeTempos[chaveDB].historico.length);
                 bancoDeTempos[chaveDB].media = novaMedia;
@@ -1061,7 +1064,6 @@ document.addEventListener("DOMContentLoaded", () => {
         
         if (tarefasNaMemoria.length === 0) {
             if (ui.acoesTabela) ui.acoesTabela.style.display = "none";
-            
             salvarMemoriaSegura('backupListaAtiva', null); 
             
             if (tarefasConcluidasHoje) {
@@ -1073,17 +1075,14 @@ document.addEventListener("DOMContentLoaded", () => {
                     </div>
                 `;
                 ui.resumoTopo.style.display = "none";
-                
                 if (ui.txtEntrada) { 
                     ui.txtEntrada.value = ''; 
                     salvarMemoriaSegura('backupTextoEntrada', ''); 
                 }
-                
                 if (!jaTocouTrofeu) {
                     tocarSintetizadorVitoria();
                     jaTocouTrofeu = true;
                 }
-
             } else {
                 ui.resultadoDiv.innerHTML = "";
                 ui.resumoTopo.style.display = "none";
@@ -1160,12 +1159,10 @@ document.addEventListener("DOMContentLoaded", () => {
             </p>
         `;
         ui.resumoTopo.style.display = "block";
-
         ui.resultadoDiv.innerHTML = html;
     }
 
 }); 
 </script>
-
 </body>
 </html>
